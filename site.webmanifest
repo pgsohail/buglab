@@ -1,0 +1,17 @@
+{
+  "name": "bugslab - Debug Better. Build Better.",
+  "short_name": "bugslab",
+  "description": "Expert bug detection, debugging tools, blockchain development, and data analytics services",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "theme_color": "#3F550A",
+  "background_color": "#F5F5F0",
+  "display": "standalone",
+  "start_url": "/"
+}
+
