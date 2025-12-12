@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bugslab - Debug Better. Build Better.</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Poppins:wght@400;500;600;700;800;900&family=Syne:wght@800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text centered-hero">
+                    <h1 class="hero-title">
+                        <div class="logo-svg-container">
+                            <img src="svgviewer-output.svg" alt="bugslab" class="logo-svg" id="mainLogo">
+                        </div>
+                    </h1>
+                    <p class="hero-tagline">DEBUG BETTER. BUILD BETTER.</p>
+                    <div class="code-snippet">
+                        <span class="code-prompt">></span>
+                        <span class="code-text" id="typingText"></span>
+                        <span class="cursor-blink">▋</span>
+                    </div>
+                    <p class="hero-description">
+                        Empowering developers with intelligent debugging tools, blockchain development, and data solutions. 
+                        We specialize in blockchain technology, data analytics, and quality assurance to help you build better software.
+                    </p>
+                    <div class="hero-buttons">
+                        <a href="#contact" class="btn btn-primary">Get Started</a>
+                        <a href="#features" class="btn btn-secondary">Learn More</a>
+                    </div>
+                    <!-- Animated coding bugs -->
+                    <div class="crawling-bugs">
+                        <div class="bug bug-1">
+                            <div class="bug-body">
+                                <span class="bug-code">{</span>
+                                <span class="bug-dot">●</span>
+                                <span class="bug-code">}</span>
+                            </div>
+                        </div>
+                        <div class="bug bug-2">
+                            <div class="bug-body">
+                                <span class="bug-code">{</span>
+                                <span class="bug-dot">●</span>
+                                <span class="bug-code">}</span>
+                            </div>
+                        </div>
+                        <div class="bug bug-3">
+                            <div class="bug-body">
+                                <span class="bug-code">{</span>
+                                <span class="bug-dot">●</span>
+                                <span class="bug-code">}</span>
+                            </div>
+                        </div>
+                        <div class="bug bug-4">
+                            <div class="bug-body">
+                                <span class="bug-code">{</span>
+                                <span class="bug-dot">●</span>
+                                <span class="bug-code">}</span>
+                            </div>
+                        </div>
+                        <div class="bug bug-5">
+                            <div class="bug-body">
+                                <span class="bug-code">{</span>
+                                <span class="bug-dot">●</span>
+                                <span class="bug-code">}</span>
+                            </div>
+                        </div>
+                        <div class="bug bug-6">
+                            <div class="bug-body">
+                                <span class="bug-code">{</span>
+                                <span class="bug-dot">●</span>
+                                <span class="bug-code">}</span>
+                            </div>
+                        </div>
+                        <div class="bug bug-7">
+                            <div class="bug-body">
+                                <span class="bug-code">{</span>
+                                <span class="bug-dot">●</span>
+                                <span class="bug-code">}</span>
+                            </div>
+                        </div>
+                        <div class="bug bug-8">
+                            <div class="bug-body">
+                                <span class="bug-code">{</span>
+                                <span class="bug-dot">●</span>
+                                <span class="bug-code">}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Enhanced coding effect particles -->
+                    <div class="coding-effect">
+                        <div class="code-particle">function</div>
+                        <div class="code-particle">const</div>
+                        <div class="code-particle">let</div>
+                        <div class="code-particle">return</div>
+                        <div class="code-particle">if</div>
+                        <div class="code-particle">else</div>
+                        <div class="code-particle">for</div>
+                        <div class="code-particle">while</div>
+                        <div class="code-particle">async</div>
+                        <div class="code-particle">await</div>
+                        <div class="code-particle">class</div>
+                        <div class="code-particle">import</div>
+                        <div class="code-particle">export</div>
+                        <div class="code-particle">try</div>
+                        <div class="code-particle">catch</div>
+                        <div class="code-particle">throw</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header scroll-animate">
+                <h2 class="section-title">Our Features</h2>
+                <p class="section-subtitle">Everything you need to debug and build better software</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card scroll-animate">
+                    <div class="feature-icon"><span class="code-bracket">{</span><span class="code-dot">●</span><span class="code-bracket">}</span></div>
+                    <h3 class="feature-title">Blockchain Development</h3>
+                    <p class="feature-description">
+                        Expert blockchain solutions including smart contracts, DeFi applications, 
+                        NFT platforms, and custom blockchain architectures. We build secure, scalable 
+                        decentralized systems with Solidity, Rust, and Web3 technologies. From token 
+                        creation to full DApp development, we deliver production-ready blockchain solutions.
+                    </p>
+                </div>
+                <div class="feature-card scroll-animate">
+                    <div class="feature-icon"><span class="code-bracket">[</span><span class="code-dot">●</span><span class="code-bracket">]</span></div>
+                    <h3 class="feature-title">Data Analytics & Science</h3>
+                    <p class="feature-description">
+                        Transform your data into actionable insights. We provide data analysis, 
+                        machine learning models, predictive analytics, and comprehensive data 
+                        visualization solutions. Our team specializes in data cleaning, ETL processes, 
+                        statistical modeling, and building robust data pipelines for enterprise-scale operations.
+                    </p>
+                </div>
+                <div class="feature-card scroll-animate">
+                    <div class="feature-icon"><span class="code-bracket">&lt;</span><span class="code-dot">●</span><span class="code-bracket">/&gt;</span></div>
+                    <h3 class="feature-title">Machine Learning & AI</h3>
+                    <p class="feature-description">
+                        Advanced machine learning solutions including deep learning, neural networks, 
+                        natural language processing, and computer vision. We develop custom ML models, 
+                        train and deploy AI systems, and integrate intelligent automation into your 
+                        workflows for enhanced productivity and decision-making.
+                    </p>
+                </div>
+                <div class="feature-card scroll-animate">
+                    <div class="feature-icon"><span class="code-bracket">(</span><span class="code-dot">●</span><span class="code-bracket">)</span></div>
+                    <h3 class="feature-title">Smart Bug Detection & Removal</h3>
+                    <p class="feature-description">
+                        AI-powered bug detection that finds issues before they become problems. 
+                        Advanced algorithms analyze your code in real-time with precision. We provide 
+                        automated bug fixing, code refactoring, and comprehensive debugging services 
+                        to ensure your software runs flawlessly.
+                    </p>
+                </div>
+                <div class="feature-card scroll-animate">
+                    <div class="feature-icon"><span class="code-bracket">[</span><span class="code-dot">●</span><span class="code-bracket">]</span></div>
+                    <h3 class="feature-title">Quality Assurance & Testing</h3>
+                    <p class="feature-description">
+                        Comprehensive testing and validation tools to ensure your code meets 
+                        the highest quality standards. Automated testing, security audits, performance 
+                        testing, and continuous integration. We implement test-driven development 
+                        practices and maintain code quality throughout the development lifecycle.
+                    </p>
+                </div>
+                <div class="feature-card scroll-animate">
+                    <div class="feature-icon"><span class="code-bracket">{</span><span class="code-dot">●</span><span class="code-bracket">}</span></div>
+                    <h3 class="feature-title">Data Cleaning & Management</h3>
+                    <p class="feature-description">
+                        Complete data solutions including data cleaning, database design, data warehousing, 
+                        ETL processes, and data pipeline development. We handle messy datasets, remove 
+                        duplicates, fix inconsistencies, and transform raw data into clean, structured 
+                        formats ready for analysis and machine learning.
+                    </p>
+                </div>
+                <div class="feature-card scroll-animate">
+                    <div class="feature-icon"><span class="code-bracket">(</span><span class="code-dot">●</span><span class="code-bracket">)</span></div>
+                    <h3 class="feature-title">Project Management & Architecture</h3>
+                    <p class="feature-description">
+                        Managing bulky software projects with expertise in system architecture, 
+                        microservices design, and scalable infrastructure. We handle complex project 
+                        coordination, technical leadership, and ensure timely delivery of large-scale 
+                        software solutions with best practices and agile methodologies.
+                    </p>
+                </div>
+                <div class="feature-card scroll-animate">
+                    <div class="feature-icon"><span class="code-bracket">&lt;</span><span class="code-dot">●</span><span class="code-bracket">/&gt;</span></div>
+                    <h3 class="feature-title">Full-Stack Development</h3>
+                    <p class="feature-description">
+                        End-to-end development services from frontend to backend, cloud deployment, 
+                        and DevOps. We build scalable, modern applications using React, Node.js, Python, 
+                        and cloud technologies. From MVP to production, we deliver high-performance 
+                        solutions that scale with your business.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text scroll-animate">
+                    <h2 class="section-title">About bugslab</h2>
+                    <p class="about-description">
+                        At bugslab, we are a cutting-edge technology company specializing in blockchain development, 
+                        data analytics, machine learning, and quality software solutions. Our mission is to empower 
+                        businesses and developers with the tools they need to debug better and build better.
+                    </p>
+                    <p class="about-description">
+                        We excel in blockchain technology, creating secure smart contracts, DeFi platforms, and 
+                        decentralized applications. Our data science team transforms raw data into actionable insights 
+                        through advanced analytics, machine learning, and predictive modeling. We specialize in data 
+                        cleaning, managing complex software projects, and implementing robust quality testing frameworks. 
+                        Combined with our intelligent debugging tools and comprehensive quality assurance services, we 
+                        provide end-to-end solutions for modern software development, from initial architecture to 
+                        production deployment.
+                    </p>
+                    <div class="stats">
+                        <div class="stat-item scroll-animate">
+                            <div class="stat-number">10K+</div>
+                            <div class="stat-label">Bugs Detected</div>
+                        </div>
+                        <div class="stat-item scroll-animate">
+                            <div class="stat-number">500+</div>
+                            <div class="stat-label">Active Users</div>
+                        </div>
+                        <div class="stat-item scroll-animate">
+                            <div class="stat-number">99.9%</div>
+                            <div class="stat-label">Accuracy</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <div class="section-header scroll-animate">
+                <h2 class="section-title">Get Started</h2>
+                <p class="section-subtitle">Ready to debug better? Let's talk.</p>
+            </div>
+            <div class="contact-content scroll-animate">
+                <form class="contact-form" id="contactForm">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" name="message" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </form>
+                <div class="contact-info">
+                    <div class="info-item">
+                        <div class="info-icon"><span class="code-prompt">></span></div>
+                        <div class="info-text">
+                            <h4>Email</h4>
+                            <p class="code-style">
+                                support@bugslab.tech</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-icon"><span class="code-prompt">></span></div>
+                        <div class="info-text">
+                            <h4>Support</h4>
+                            <p class="code-style">
+                                support@bugslab.tech</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <div class="bug-body nav-bug-logo">
+                        <span class="bug-code">{</span>
+                        <span class="bug-dot">●</span>
+                        <span class="bug-code">}</span>
+                    </div>
+                    <span class="logo-text">bugslab</span>
+                </div>
+                <p class="footer-tagline">DEBUG BETTER. BUILD BETTER.</p>
+                <div class="footer-code">
+                    <span class="code-prompt">></span>
+                    <span class="code-text">_quality_control_start();</span>
+                </div>
+                <div class="footer-theme">
+                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                </div>
+                <div class="footer-social">
+                    <a href="https://www.linkedin.com/company/bugsslab" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="LinkedIn">
+                        <svg class="footer-social-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+                        </svg>
+                    </a>
+                    <a href="https://www.youtube.com/@bugslab" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="YouTube">
+                        <svg class="footer-social-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                        </svg>
+                    </a>
+                    <a href="https://x.com/bugslab" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="X (Twitter)">
+                        <svg class="footer-social-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                        </svg>
+                    </a>
+                    <a href="mailto:
+                    support@bugslab.tech" class="footer-social-link" aria-label="Email">
+                        <svg class="footer-social-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                        </svg>
+                    </a>
+                    <a href="https://github.com/bugslab" target="_blank" rel="noopener noreferrer" class="footer-social-link" aria-label="GitHub">
+                        <svg class="footer-social-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                    </a>
+                    <a href="#contact" class="footer-social-link" aria-label="Contact Us">
+                        <svg class="footer-social-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+                        </svg>
+                    </a>
+                </div>
+                <p class="footer-copyright">&copy; 2025 bugslab. All rights reserved.</p>
+            </div>
+    </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
+
