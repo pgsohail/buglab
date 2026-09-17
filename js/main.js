@@ -269,7 +269,6 @@ function setupThemeToggle(toggleId) {
     });
 }
 
-setupThemeToggle('themeToggle');
 setupThemeToggle('themeToggleFooter');
 
 // Apply saved theme immediately to prevent flash
