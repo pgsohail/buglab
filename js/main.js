@@ -1,3 +1,5 @@
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // Smooth scrolling for navigation links
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
@@ -17,6 +19,10 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 // ── Scroll progress bar ───────────────────────────────────────────────────────
 const scrollProgress = document.getElementById('scrollProgress');
 
+// ── Hero parallax dissolve: hero content drifts up and fades as you scroll ──
+const heroParallax = document.querySelector('.hero .centered-hero');
+const heroSection = document.querySelector('.hero');
+
 let scrollTicking = false;
 
 function updateOnScroll() {
@@ -24,6 +30,14 @@ function updateOnScroll() {
         const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
         const progress = scrollHeight > 0 ? (window.scrollY / scrollHeight) * 100 : 0;
         scrollProgress.style.width = `${progress}%`;
+    }
+
+    if (heroParallax && heroSection && !prefersReducedMotion) {
+        const heroHeight = heroSection.offsetHeight || window.innerHeight;
+        const raw = window.scrollY / heroHeight;
+        const eased = Math.min(Math.max(raw, 0), 1);
+        heroParallax.style.transform = `translateY(${eased * -70}px) scale(${1 - eased * 0.08})`;
+        heroParallax.style.opacity = `${1 - eased * 1.15}`;
     }
 
     scrollTicking = false;
@@ -122,8 +136,6 @@ window.addEventListener('load', () => {
 });
 
 // ── Count-up animation for stat numbers ───────────────────────────────────────
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
 function animateCountUp(element) {
     const raw = element.textContent.trim();
     const match = raw.match(/^([\d.]+)(.*)$/);
