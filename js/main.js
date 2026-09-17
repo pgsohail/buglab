@@ -168,6 +168,43 @@ if (!prefersReducedMotion) {
     });
 }
 
+// ── Random crawling bugs: enter from a random edge each cycle ────────────────
+function randomizeBug(el) {
+    const halfW = window.innerWidth / 2;
+    const halfH = window.innerHeight / 2;
+    const buffer = 160;
+    const edge = ['top', 'bottom', 'left', 'right'][Math.floor(Math.random() * 4)];
+
+    let x, y;
+    if (edge === 'top' || edge === 'bottom') {
+        x = (Math.random() * 1.6 - 0.8) * halfW;
+        y = (halfH + buffer) * (edge === 'top' ? -1 : 1);
+    } else {
+        x = (halfW + buffer) * (edge === 'left' ? -1 : 1);
+        y = (Math.random() * 1.6 - 0.8) * halfH;
+    }
+
+    const rotStart = Math.random() * 20 - 10;
+    const rotEnd = (Math.random() < 0.5 ? -1 : 1) * (170 + Math.random() * 90);
+    const duration = 10 + Math.random() * 5;
+
+    el.style.setProperty('--bug-x', `${x}px`);
+    el.style.setProperty('--bug-y', `${y}px`);
+    el.style.setProperty('--bug-rot-start', `${rotStart}deg`);
+    el.style.setProperty('--bug-rot-end', `${rotEnd}deg`);
+    el.style.animationDuration = `${duration}s`;
+}
+
+if (!prefersReducedMotion) {
+    window.addEventListener('load', () => {
+        document.querySelectorAll('.crawling-bugs .bug').forEach(el => {
+            randomizeBug(el);
+            el.style.animationDelay = `-${Math.random() * 10}s`;
+            el.addEventListener('animationiteration', () => randomizeBug(el));
+        });
+    });
+}
+
 // ── Typing animation ──────────────────────────────────────────────────────────
 function continuousTyping() {
     const typingElement = document.getElementById('typingText');
