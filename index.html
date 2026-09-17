@@ -77,42 +77,28 @@
     <!-- Scroll Progress -->
     <div class="scroll-progress" id="scrollProgress"></div>
 
-    <!-- Navigation -->
-    <nav class="navbar" id="navbar">
-        <div class="container">
-            <div class="nav-content">
-                <a href="#home" class="logo">
-                    <div class="logo-bug-container">
-                        <span class="bug-code">{</span>
-                        <span class="bug-dot">●</span>
-                        <span class="bug-code">}</span>
-                    </div>
-                    <span class="logo-text">bugslab</span>
-                </a>
-                <ul class="nav-links">
-                    <li><a href="#home">Home</a></li>
-                    <li><a href="#services">Services</a></li>
-                    <li><a href="#projects">Projects</a></li>
-                    <li><a href="#about">About</a></li>
-                    <li><a href="#contact">Contact</a></li>
-                </ul>
-                <div class="nav-actions">
-                    <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-                        <span class="theme-icon">🌙</span>
-                    </button>
-                    <a href="#contact" class="btn btn-primary btn-sm">Start a Project</a>
-                    <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <!-- Floating Controls -->
+    <div class="floating-nav" id="floatingNav">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+            <span class="theme-icon">🌙</span>
+        </button>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
 
-    <!-- Mobile Menu -->
+    <!-- Full-Screen Menu -->
     <div class="mobile-menu" id="mobileMenu">
+        <a href="#home" class="mobile-menu-logo mobile-nav-link">
+            <div class="logo-bug-container">
+                <span class="bug-code">{</span>
+                <span class="bug-dot">●</span>
+                <span class="bug-code">}</span>
+            </div>
+            <span class="logo-text">bugslab</span>
+        </a>
         <ul>
             <li><a href="#home" class="mobile-nav-link">Home</a></li>
             <li><a href="#services" class="mobile-nav-link">Services</a></li>
@@ -120,6 +106,7 @@
             <li><a href="#about" class="mobile-nav-link">About</a></li>
             <li><a href="#contact" class="mobile-nav-link">Contact</a></li>
         </ul>
+        <a href="#contact" class="btn btn-primary mobile-nav-link">Start a Project</a>
     </div>
 
     <!-- Hero Section -->
@@ -127,11 +114,6 @@
         <div class="container">
             <div class="hero-content">
                 <div class="hero-text centered-hero">
-
-                    <div class="hero-badge">
-                        <span class="badge-dot"></span>
-                        Available for new projects
-                    </div>
 
                     <h1 class="hero-title">
                         <div class="logo-svg-container">
@@ -465,7 +447,7 @@
                 <div class="about-text scroll-animate">
                     <h2 class="section-title">About bugslab</h2>
                     <p class="about-description">
-                        bugslab is a cutting-edge software development company specializing in blockchain, AI/ML, data analytics, accounting automation, and quality software solutions. A subsidiary of <a href="https://deventiatech.com" target="_blank" rel="noopener noreferrer" class="about-link">DevEntia Tech</a>, we bring enterprise-grade engineering capabilities to startups and growing businesses worldwide.
+                        bugslab is a cutting-edge software development company specializing in blockchain, AI/ML, data analytics, accounting automation, and quality software solutions. We bring enterprise-grade engineering capabilities to startups and growing businesses worldwide.
                     </p>
                     <p class="about-description">
                         From smart contract development and DeFi protocols to machine learning pipelines and AI-powered accounting software, we deliver production-ready solutions that scale. Our team of 20+ engineers and designers serves clients in the USA, UK, UAE, and beyond — combining deep technical expertise with a commitment to measurable results.
@@ -616,7 +598,6 @@
                 </div>
                 <div class="footer-bottom">
                     <p class="footer-copyright">&copy; 2025 bugslab. All rights reserved.</p>
-                    <p class="footer-parent">A subsidiary of <a href="https://deventiatech.com" target="_blank" rel="noopener noreferrer">DevEntia Tech</a></p>
                 </div>
             </div>
         </div>

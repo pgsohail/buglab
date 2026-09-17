@@ -14,19 +14,12 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// ── Navbar scroll behaviour + scroll progress bar ────────────────────────────
-const navbar = document.getElementById('navbar');
+// ── Scroll progress bar ───────────────────────────────────────────────────────
 const scrollProgress = document.getElementById('scrollProgress');
 
 let scrollTicking = false;
 
 function updateOnScroll() {
-    if (window.scrollY > 20) {
-        navbar?.classList.add('scrolled');
-    } else {
-        navbar?.classList.remove('scrolled');
-    }
-
     if (scrollProgress) {
         const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
         const progress = scrollHeight > 0 ? (window.scrollY / scrollHeight) * 100 : 0;
@@ -47,7 +40,7 @@ updateOnScroll();
 
 // ── Scrollspy: highlight active nav link based on section in view ───────────
 const sections = document.querySelectorAll('section[id]');
-const navLinks = document.querySelectorAll('.nav-links a, .mobile-nav-link');
+const navLinks = document.querySelectorAll('.mobile-menu ul li a');
 
 if (sections.length && navLinks.length) {
     const spyObserver = new IntersectionObserver((entries) => {
@@ -117,8 +110,7 @@ const scrollObserver = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         if (entry.isIntersecting) {
             entry.target.classList.add('animate-in');
-        } else {
-            entry.target.classList.remove('animate-in');
+            scrollObserver.unobserve(entry.target);
         }
     });
 }, scrollObserverOptions);
