@@ -847,7 +847,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: bugCycle 12s ease-in-out infinite;
+    animation: none;
     will-change: transform, opacity;
     --bug-x: -200px;
     --bug-y: -200px;

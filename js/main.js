@@ -168,7 +168,7 @@ if (!prefersReducedMotion) {
     });
 }
 
-// ── Random crawling bugs: enter from a random edge each cycle ────────────────
+// ── Random crawling bugs: appear occasionally, not continuously ─────────────
 function randomizeBug(el) {
     const halfW = window.innerWidth / 2;
     const halfH = window.innerHeight / 2;
@@ -186,22 +186,46 @@ function randomizeBug(el) {
 
     const rotStart = Math.random() * 20 - 10;
     const rotEnd = (Math.random() < 0.5 ? -1 : 1) * (170 + Math.random() * 90);
-    const duration = 10 + Math.random() * 5;
+    const duration = 18 + Math.random() * 8; // slow, unhurried crawl
 
     el.style.setProperty('--bug-x', `${x}px`);
     el.style.setProperty('--bug-y', `${y}px`);
     el.style.setProperty('--bug-rot-start', `${rotStart}deg`);
     el.style.setProperty('--bug-rot-end', `${rotEnd}deg`);
-    el.style.animationDuration = `${duration}s`;
+    return duration;
 }
 
+// Only ever one bug on screen at a time, appearing every so often with
+// real quiet gaps in between, instead of a constant swarm.
 if (!prefersReducedMotion) {
     window.addEventListener('load', () => {
-        document.querySelectorAll('.crawling-bugs .bug').forEach(el => {
-            randomizeBug(el);
-            el.style.animationDelay = `-${Math.random() * 10}s`;
-            el.addEventListener('animationiteration', () => randomizeBug(el));
-        });
+        const bugs = Array.from(document.querySelectorAll('.crawling-bugs .bug'));
+        bugs.forEach(el => { el.style.animation = 'none'; });
+        if (!bugs.length) return;
+
+        let busy = false;
+
+        function trySpawn() {
+            if (busy || Math.random() > 0.55) return;
+            busy = true;
+
+            const el = bugs[Math.floor(Math.random() * bugs.length)];
+            const duration = randomizeBug(el);
+            el.style.animation = `bugCycle ${duration}s ease-in-out 1`;
+
+            el.addEventListener('animationend', function handler() {
+                el.removeEventListener('animationend', handler);
+                el.style.animation = 'none';
+                busy = false;
+            }, { once: true });
+        }
+
+        function loop() {
+            trySpawn();
+            setTimeout(loop, 6000 + Math.random() * 6000);
+        }
+
+        setTimeout(loop, 1500);
     });
 }
 
