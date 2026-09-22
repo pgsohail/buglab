@@ -175,7 +175,7 @@
     }
 
     /* ── Ring ladybug: blink now and then ─────────────── */
-    const rb = $('#ringBug');
+    const rb = $('#logoEyes');
     if (rb && !reduceMotion) {
         setInterval(() => { rb.classList.add('blink'); setTimeout(() => rb.classList.remove('blink'), 150); }, 3400);
     }
@@ -414,25 +414,57 @@
         tick();
     }
 
-    /* ── Intro tagline: type / erase loop ─────────────── */
-    const typeEl = $('#typeTag');
-    if (typeEl && !reduceMotion) {
+    /* ── Intro tagline: letters fill with colour one by one, like the logo ── */
+    const tagEl = $('#tagFx');
+    if (tagEl) {
         const phrases = ['Debug better. Build better.', 'Blockchain. AI. Data.', 'Smart contracts. Clean data.'];
-        let pi = 0, ci = phrases[0].length, deleting = true;
-        const loop = () => {
-            const full = phrases[pi];
-            if (deleting) {
-                ci--;
-                typeEl.textContent = full.slice(0, ci);
-                if (ci <= 0) { deleting = false; pi = (pi + 1) % phrases.length; return setTimeout(loop, 350); }
-                return setTimeout(loop, 28);
-            }
-            ci++;
-            typeEl.textContent = phrases[pi].slice(0, ci);
-            if (ci >= phrases[pi].length) { deleting = true; return setTimeout(loop, 2200); }
-            setTimeout(loop, 60);
+        const tagPalettes = [
+            ['#3F550A'],
+            ['#2F4A06', '#4F7410', '#719F1A', '#93C924'],
+            ['#3F550A', '#1F6FEB', '#F2A900', '#7B2CBF', '#0E9F6E', '#E0457B'],
+            ['#121410'],
+            ['#0E9F6E', '#167962', '#1E5356', '#3F550A']
+        ];
+        // effect = gradient direction + which background-position moves
+        const tagFx = [
+            { dir: 'to bottom', size: '100% 200%', from: '0 0%', to: '0 100%' },   // colour rises from below
+            { dir: 'to top', size: '100% 200%', from: '0 100%', to: '0 0%' },     // colour pours from above
+            { dir: 'to left', size: '200% 100%', from: '100% 0', to: '0% 0' },    // sweep left → right
+            { dir: 'to right', size: '200% 100%', from: '0% 0', to: '100% 0' }    // sweep right → left
+        ];
+        let round = 0;
+        const render = (text, pal, fx) => {
+            tagEl.textContent = '';
+            return [...text].map((ch, i) => {
+                const s = document.createElement('span');
+                s.className = 'tf-ch';
+                s.textContent = ch === ' ' ? '\u00a0' : ch;
+                const c = pal[i % pal.length];
+                s.style.backgroundImage = `linear-gradient(${fx.dir}, #E71809 50%, ${c} 50%)`;
+                s.style.backgroundSize = fx.size;
+                s.style.backgroundPosition = fx.from;
+                tagEl.appendChild(s);
+                return s;
+            });
         };
-        setTimeout(loop, 3200);
+        const run = () => {
+            const text = phrases[round % phrases.length];
+            const pal = tagPalettes[round % tagPalettes.length];
+            const fx = tagFx[round % tagFx.length];
+            round++;
+            const chars = render(text, pal, fx);
+            if (reduceMotion) { chars.forEach(s => { s.style.backgroundPosition = fx.to; }); return setTimeout(run, 6000); }
+            tagEl.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 500, fill: 'both' });
+            const STEP = 90, DUR = 700;
+            chars.forEach((s, i) => s.animate([{ backgroundPosition: fx.from }, { backgroundPosition: fx.to }],
+                { duration: DUR, delay: 600 + i * STEP, easing: 'cubic-bezier(.55,0,.35,1)', fill: 'both' }));
+            const total = 600 + chars.length * STEP + DUR;
+            setTimeout(() => {
+                tagEl.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: 'both' });
+                setTimeout(run, 550);
+            }, total + 3000);
+        };
+        run();
     }
 
     /* ── Intro particles: torus → DEBUG → BUILD → SHIP (auto loop) ── */
@@ -477,8 +509,8 @@
         };
 
         // shapes sit on the right half on wide screens, centred on small ones
-        const centerX = () => (W >= 900 ? W * 0.7 : W / 2);
-        const centerY = () => (W >= 900 ? H * 0.48 : H * 0.62);
+        const centerX = () => W / 2;
+        const centerY = () => H * 0.5;
         const wordShape = (word) => sample((o, w, h) => {
             const box = w >= 900 ? w * 0.42 : w * 0.9;
             let fs = Math.min(h * 0.26, box * 0.34);
@@ -570,21 +602,21 @@
                     px[i] = W / 2; py[i] = H / 2;
                 }
             }
-            shapes = [null, ringShape('DEBUG'), ringShape('BUILD'), ringShape('SHIP')];
-            const newM = small ? 900 : 1600;
+            shapes = [null];
+            const newM = 0;
             if (newM !== M) {
                 M = newM;
                 qx = new Float32Array(M); qy = new Float32Array(M); qvx = new Float32Array(M); qvy = new Float32Array(M);
                 for (let i = 0; i < M; i++) { qx[i] = W / 2; qy[i] = H / 2; }
             }
-            bugPts = bugShape();
+            bugPts = null;
             placeBug();
         };
 
         // torus point i → screen xy + size (shape 0 is live, it rotates)
         const tor = { x: 0, y: 0, s: 1 };
         const torus = (i) => {
-            const R = W >= 900 ? Math.min(W * 0.17, H * 0.28) : Math.min(W, H) * 0.3;
+            const R = W >= 900 ? Math.min(W * 0.34, H * 0.62) : Math.max(W * 0.62, H * 0.3);
             const u = pu[i], v = pv[i];
             const Rr = R * (1 + 0.05 * Math.sin(3 * u + time * 0.9));
             const rr = R * 0.46 * (1 + 0.12 * Math.sin(2 * v + 4 * u + time * 1.3));
@@ -667,7 +699,7 @@
         const frame = () => {
             if (!running) return;
             time += 1 / 60;
-            const stg = reduceMotion ? { from: 0, to: 0, t: 0 } : stageAt(time);
+            const stg = { from: 0, to: 0, t: 0 };
             const from = stg.from, to = stg.to, t = stg.t;
             setCaption(t > 0.5 ? to : from);
             const A = shapes[from], B = shapes[to];
