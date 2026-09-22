@@ -467,326 +467,145 @@
         run();
     }
 
-    /* ── Intro particles: torus → DEBUG → BUILD → SHIP (auto loop) ── */
+    /* ── Intro particles: full-page flowing dot field that gathers into DEBUG / BUILD / SHIP ── */
     const canvas = $('#particles');
-    const story = $('.intro');
-    if (canvas && story) {
+    const intro = $('.intro');
+    if (canvas && intro) {
         const ctx = canvas.getContext('2d');
-        const labelEl = $('#artLabel');
-        const captions = ['01 · Ideas', '02 · Debug', '03 · Build', '04 · Ship'];
-        let W = 0, H = 0, DPR = 1, N = 0, NU = 0, NV = 0;
-        let px, py, vx, vy, pu, pv, delay, shapes = [];
-        let running = false, time = 0, lastStage = -1;
+        let W = 0, H = 0, DPR = 1, N = 0, COLS = 0, ROWS = 0, GAP = 20;
+        let px, py, vx, vy, gx, gy, delay, words = {};
+        let running = false, time = 0;
         const mouse = { x: -9999, y: -9999, active: false };
-        const pet = { x: 0, y: 0, rot: 0, init: false };
-        let logoImg = null;
 
-        const sample = (draw, cnt = N) => {
+        // sample the pixels of a big word and hand one target point to every particle
+        const wordShape = (word) => {
             const off = document.createElement('canvas');
             off.width = Math.max(1, Math.floor(W)); off.height = Math.max(1, Math.floor(H));
             const o = off.getContext('2d');
-            draw(o, off.width, off.height);
+            let fs = H * 0.42;
+            o.font = `900 ${fs}px "Bricolage Grotesque", "Arial Black", Arial, sans-serif`;
+            const m = o.measureText(word).width;
+            const box = W * 0.92;
+            if (m > box) { fs *= box / m; o.font = `900 ${fs}px "Bricolage Grotesque", "Arial Black", Arial, sans-serif`; }
+            o.textAlign = 'center'; o.textBaseline = 'middle';
+            o.fillText(word, W / 2, H * 0.5);
             const data = o.getImageData(0, 0, off.width, off.height).data;
-            const step = W < 700 ? 2 : 3;
-            const pts = [];
-            for (let y = 0; y < off.height; y += step) {
-                for (let x = 0; x < off.width; x += step) {
+            const step = W < 700 ? 3 : 4, pts = [];
+            for (let y = 0; y < off.height; y += step)
+                for (let x = 0; x < off.width; x += step)
                     if (data[(y * off.width + x) * 4 + 3] > 120) pts.push(x, y);
-                }
-            }
-            const count = pts.length / 2;
-            const out = new Float32Array(cnt * 2);
+            const count = pts.length / 2, out = new Float32Array(N * 2);
             if (!count) return out;
-            // shuffle order so particles spread evenly over the glyphs
             const idx = Array.from({ length: count }, (_, i) => i);
-            for (let i = count - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [idx[i], idx[j]] = [idx[j], idx[i]]; }
-            for (let i = 0; i < cnt; i++) {
+            for (let i = count - 1; i > 0; i--) { const k = (Math.random() * (i + 1)) | 0; [idx[i], idx[k]] = [idx[k], idx[i]]; }
+            for (let i = 0; i < N; i++) {
                 const k = idx[i % count];
-                out[i * 2] = pts[k * 2] + (Math.random() - 0.5) * step * 0.8;
-                out[i * 2 + 1] = pts[k * 2 + 1] + (Math.random() - 0.5) * step * 0.8;
+                out[i * 2] = pts[k * 2] + (Math.random() - 0.5) * step;
+                out[i * 2 + 1] = pts[k * 2 + 1] + (Math.random() - 0.5) * step;
             }
             return out;
         };
 
-        // shapes sit on the right half on wide screens, centred on small ones
-        const centerX = () => W / 2;
-        const centerY = () => H * 0.5;
-        const wordShape = (word) => sample((o, w, h) => {
-            const box = w >= 900 ? w * 0.42 : w * 0.9;
-            let fs = Math.min(h * 0.26, box * 0.34);
-            o.font = `700 ${fs}px Georgia, "Times New Roman", serif`;
-            const m = o.measureText(word).width;
-            if (m > box) { fs *= box / m; o.font = `700 ${fs}px Georgia, "Times New Roman", serif`; }
-            o.textAlign = 'center'; o.textBaseline = 'middle';
-            o.fillText(word, centerX(), centerY());
-        });
-
-        // word repeated around a circle (+ a small inner ring), stored relative to the centre
-        const ringR = () => (W >= 900 ? Math.min(W * 0.17, H * 0.3) : Math.min(W, H) * 0.34);
-        const ringShape = (word) => {
-            const cx = centerX(), cy = centerY();
-            const arr = sample((o) => {
-                const drawRing = (text, r, fs, weight) => {
-                    o.font = `${weight} ${fs}px "Bricolage Grotesque", "Arial Black", Arial, sans-serif`;
-                    const unit = text + ' • ';
-                    const unitW = o.measureText(unit).width;
-                    const reps = Math.max(1, Math.round((Math.PI * 2 * r) / unitW));
-                    const full = unit.repeat(reps);
-                    const total = o.measureText(full).width;
-                    let acc = 0;
-                    o.textAlign = 'center'; o.textBaseline = 'middle';
-                    for (const ch of full) {
-                        const cw = o.measureText(ch).width;
-                        const ang = ((acc + cw / 2) / total) * Math.PI * 2 - Math.PI / 2;
-                        o.save();
-                        o.translate(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r);
-                        o.rotate(ang + Math.PI / 2);
-                        o.fillText(ch, 0, 0);
-                        o.restore();
-                        acc += cw;
-                    }
-                };
-                const r = ringR();
-                drawRing(word, r, r * 0.34, 800);
-            });
-            for (let i = 0; i < arr.length; i += 2) { arr[i] -= cx; arr[i + 1] -= cy; }
-            return arr;
-        };
-
-        const logoShape = () => {
-            if (!logoImg || !logoImg.complete || !logoImg.naturalWidth) return wordShape('bugslab');
-            return sample((o, w, h) => {
-                const lw = Math.min(w * (w < 700 ? 0.94 : 0.82), 980);
-                const lh = lw * (169 / 571);
-                o.drawImage(logoImg, (w - lw) / 2, h * 0.46 - lh / 2, lw, lh);
-            });
-        };
-
-        const ringBug = $('#ringBug');
-        // ladybug "b" from the logo (x 225–352 of the 571-wide viewBox), drawn in dots in the ring centre
-        const bugH = () => ringR() * 0.6;
-        const bugW = () => bugH() * (121 / 134);
-        const bugImg = new Image();
-        bugImg.src = 'data:image/png;base64,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';
-        let M = 0, qx, qy, qvx, qvy, bugPts = null;
-        const bugShape = () => sample((o) => {
-            if (!bugImg.naturalWidth) return;
-            const h = bugH(), w = bugW();
-            o.drawImage(bugImg, centerX() - w / 2, centerY() - h / 2, w, h);
-        }, M);
-        const placeBug = () => {
-            if (!ringBug) return;
-            ringBug.style.left = centerX() + 'px';
-            ringBug.style.top = centerY() + 'px';
-            ringBug.style.width = bugW() + 'px';
-            ringBug.style.height = bugH() + 'px';
-        };
         const build = () => {
             const r = canvas.getBoundingClientRect();
             W = r.width; H = r.height;
             DPR = Math.min(2, devicePixelRatio || 1);
             canvas.width = W * DPR; canvas.height = H * DPR;
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-            const small = W < 700;
-            NU = small ? 100 : 150; NV = small ? 30 : 44;
-            const newN = NU * NV;
-            if (newN !== N) {
-                N = newN;
-                px = new Float32Array(N); py = new Float32Array(N);
-                vx = new Float32Array(N); vy = new Float32Array(N);
-                pu = new Float32Array(N); pv = new Float32Array(N); delay = new Float32Array(N);
-                for (let i = 0; i < N; i++) {
-                    pu[i] = ((i % NU) / NU) * Math.PI * 2;
-                    pv[i] = (Math.floor(i / NU) / NV) * Math.PI * 2;
-                    delay[i] = Math.random();
-                    px[i] = W / 2; py[i] = H / 2;
-                }
+            GAP = W < 700 ? 17 : 19;
+            COLS = Math.ceil(W / GAP) + 2; ROWS = Math.ceil(H / GAP) + 2;
+            N = COLS * ROWS;
+            px = new Float32Array(N); py = new Float32Array(N);
+            vx = new Float32Array(N); vy = new Float32Array(N);
+            gx = new Float32Array(N); gy = new Float32Array(N); delay = new Float32Array(N);
+            for (let i = 0; i < N; i++) {
+                gx[i] = (i % COLS) * GAP - GAP / 2;
+                gy[i] = Math.floor(i / COLS) * GAP - GAP / 2;
+                px[i] = gx[i]; py[i] = gy[i];
+                delay[i] = Math.random();
             }
-            shapes = [null];
-            const newM = 0;
-            if (newM !== M) {
-                M = newM;
-                qx = new Float32Array(M); qy = new Float32Array(M); qvx = new Float32Array(M); qvy = new Float32Array(M);
-                for (let i = 0; i < M; i++) { qx[i] = W / 2; qy[i] = H / 2; }
-            }
-            bugPts = null;
-            placeBug();
+            words = { DEBUG: wordShape('DEBUG'), BUILD: wordShape('BUILD'), SHIP: wordShape('SHIP') };
         };
 
-        // torus point i → screen xy + size (shape 0 is live, it rotates)
-        const tor = { x: 0, y: 0, s: 1 };
-        const torus = (i) => {
-            const R = W >= 900 ? Math.min(W * 0.34, H * 0.62) : Math.max(W * 0.62, H * 0.3);
-            const u = pu[i], v = pv[i];
-            const Rr = R * (1 + 0.05 * Math.sin(3 * u + time * 0.9));
-            const rr = R * 0.46 * (1 + 0.12 * Math.sin(2 * v + 4 * u + time * 1.3));
-            let x = (Rr + rr * Math.cos(v)) * Math.cos(u);
-            let y = (Rr + rr * Math.cos(v)) * Math.sin(u);
-            let z = rr * Math.sin(v);
-            // spin around own axis
-            const a = time * 0.1;
-            const ca = Math.cos(a), sa = Math.sin(a);
-            let x1 = x * ca - y * sa, y1 = x * sa + y * ca;
-            // tilt (x-axis) + mouse sway (y-axis)
-            const mx = mouse.active ? (mouse.x / W - 0.5) : 0;
-            const my = mouse.active ? (mouse.y / H - 0.5) : 0;
-            const tilt = 0.55 + my * 0.5;
-            const ct = Math.cos(tilt), st = Math.sin(tilt);
-            let y2 = y1 * ct - z * st, z2 = y1 * st + z * ct;
-            const yaw = mx * 0.7;
-            const cy = Math.cos(yaw), sy = Math.sin(yaw);
-            let x3 = x1 * cy + z2 * sy, z3 = -x1 * sy + z2 * cy;
-            const cam = R * 4;
-            const f = cam / (cam - z3);
-            tor.x = centerX() + x3 * f;
-            tor.y = centerY() + y2 * f;
-            tor.s = Math.max(0.35, 0.5 + ((z3 / (R * 1.5)) + 0.5) * 1.5);
-            return tor;
+        // the resting field: a grid that ripples like a slow wave; dot size follows the wave height
+        const fp = { x: 0, y: 0, s: 1 };
+        const field = (i) => {
+            const x = gx[i], y = gy[i], t = time;
+            const z = Math.sin(x * 0.009 + t * 0.55) * Math.cos(y * 0.011 - t * 0.4) + 0.5 * Math.sin((x + y) * 0.006 + t * 0.3);
+            fp.x = x + Math.sin(y * 0.018 + t * 0.6) * 7;
+            fp.y = y + z * 9;
+            fp.s = 0.55 + (z + 1.5) * 0.55;
+            return fp;
         };
 
-        const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-        // timeline: hold torus, then each word, looping back to the torus
-        const HOLD = [6, 4.5, 4.5, 4.5], MORPH = 2.6;
-        const CYCLE = HOLD.reduce((a, b) => a + b, 0) + MORPH * 4;
+        // timeline: field → DEBUG → field → BUILD → field → SHIP → (loop)
+        const seq = ['field', 'DEBUG', 'field', 'BUILD', 'field', 'SHIP'];
+        const HOLD = { field: 5.5, word: 3.8 }, MORPH = 2.6;
+        const holdOf = k => (seq[k] === 'field' ? HOLD.field : HOLD.word);
+        const CYCLE = seq.reduce((s, _, k) => s + holdOf(k) + MORPH, 0);
         const stageAt = (tm) => {
             let x = tm % CYCLE;
-            for (let k = 0; k < 4; k++) {
-                if (x < HOLD[k]) return { from: k, to: k, t: 0 };
-                x -= HOLD[k];
-                if (x < MORPH) return { from: k, to: (k + 1) % 4, t: x / MORPH };
+            for (let k = 0; k < seq.length; k++) {
+                if (x < holdOf(k)) return { a: seq[k], b: seq[k], t: 0 };
+                x -= holdOf(k);
+                if (x < MORPH) return { a: seq[k], b: seq[(k + 1) % seq.length], t: x / MORPH };
                 x -= MORPH;
             }
-            return { from: 0, to: 0, t: 0 };
+            return { a: 'field', b: 'field', t: 0 };
         };
-        const setCaption = (k) => {
-            if (k === lastStage || !labelEl) return;
-            lastStage = k;
-            labelEl.textContent = captions[k];
-        };
-
-        const drawPet = () => {
-            // little swirl-armed bug that drifts after the cursor
-            const tx = mouse.active ? mouse.x + 60 : W * (W >= 900 ? 0.86 : 0.8) + Math.cos(time * 0.6) * 30;
-            const ty = mouse.active ? mouse.y - 60 : H * 0.16 + Math.sin(time * 0.8) * 16;
-            if (!pet.init) { pet.x = tx; pet.y = ty; pet.init = true; }
-            const dx = tx - pet.x, dy = ty - pet.y;
-            pet.x += dx * 0.05; pet.y += dy * 0.05;
-            const speed = Math.min(1, Math.hypot(dx, dy) / 200);
-            pet.rot += 0.03 + speed * 0.15;
-            ctx.fillStyle = 'rgba(18,20,16,.55)';
-            ctx.beginPath();
-            for (let arm = 0; arm < 2; arm++) {
-                for (let j = 0; j < 24; j++) {
-                    const ang = pet.rot + arm * Math.PI + j * 0.17;
-                    const rad = 16 + j * 2.3;
-                    const s = 1.9 - j * 0.06;
-                    const x = pet.x + Math.cos(ang) * rad, y = pet.y + Math.sin(ang) * rad;
-                    ctx.moveTo(x + s, y); ctx.arc(x, y, s, 0, Math.PI * 2);
-                }
-            }
-            ctx.fill();
-            ctx.fillStyle = '#121410';
-            ctx.beginPath(); ctx.arc(pet.x, pet.y + 3, 10, 0, Math.PI * 2); ctx.fill();
-            const look = Math.atan2(dy || 1, dx || 1);
-            for (const ex of [-9, 9]) {
-                ctx.fillStyle = '#fff';
-                ctx.beginPath(); ctx.arc(pet.x + ex, pet.y - 5, 7, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#121410';
-                ctx.beginPath(); ctx.arc(pet.x + ex + Math.cos(look) * 2.6, pet.y - 5 + Math.sin(look) * 2.6, 3.2, 0, Math.PI * 2); ctx.fill();
-            }
-        };
+        const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
         const frame = () => {
             if (!running) return;
             time += 1 / 60;
-            const stg = { from: 0, to: 0, t: 0 };
-            const from = stg.from, to = stg.to, t = stg.t;
-            setCaption(t > 0.5 ? to : from);
-            const A = shapes[from], B = shapes[to];
-            const rot = reduceMotion ? 0 : time * 0.07;
-            const rc = Math.cos(rot), rs = Math.sin(rot), cxN = centerX(), cyN = centerY();
+            const st = reduceMotion ? { a: 'field', b: 'field', t: 0 } : stageAt(time);
+            const A = st.a === 'field' ? null : words[st.a];
+            const B = st.b === 'field' ? null : words[st.b];
             ctx.clearRect(0, 0, W, H);
             ctx.fillStyle = '#121410';
             ctx.beginPath();
-            const rep = W < 700 ? 60 : 100, rep2 = rep * rep;
+            const rep = W < 700 ? 70 : 120, rep2 = rep * rep;
             for (let i = 0; i < N; i++) {
-                // staggered morph per particle
-                const ti = ease(Math.min(1, Math.max(0, t * 1.5 - delay[i] * 0.5)));
+                const ti = ease(Math.min(1, Math.max(0, st.t * 1.6 - delay[i] * 0.6)));
                 let ax, ay, as, bx, by, bs;
-                if (from === 0) { const q = torus(i); ax = q.x; ay = q.y; as = q.s; }
-                else { const rx = A[i * 2], ry = A[i * 2 + 1]; ax = cxN + rx * rc - ry * rs; ay = cyN + rx * rs + ry * rc; as = 1.05; }
-                if (to === 0) { const q = torus(i); bx = q.x; by = q.y; bs = q.s; }
-                else { const rx = B[i * 2], ry = B[i * 2 + 1]; bx = cxN + rx * rc - ry * rs; by = cyN + rx * rs + ry * rc; bs = 1.05; }
+                if (!A) { const q = field(i); ax = q.x; ay = q.y; as = q.s; } else { ax = A[i * 2]; ay = A[i * 2 + 1]; as = 1.35; }
+                if (!B) { const q = field(i); bx = q.x; by = q.y; bs = q.s; } else { bx = B[i * 2]; by = B[i * 2 + 1]; bs = 1.35; }
                 const tx = ax + (bx - ax) * ti, ty = ay + (by - ay) * ti, size = as + (bs - as) * ti;
                 if (reduceMotion) { px[i] = tx; py[i] = ty; }
                 else {
-                    vx[i] += (tx - px[i]) * 0.075;
-                    vy[i] += (ty - py[i]) * 0.075;
+                    vx[i] += (tx - px[i]) * 0.06; vy[i] += (ty - py[i]) * 0.06;
                     if (mouse.active) {
                         const dx = px[i] - mouse.x, dy = py[i] - mouse.y, d2 = dx * dx + dy * dy;
                         if (d2 < rep2 && d2 > 0.01) {
-                            const d = Math.sqrt(d2), f = (1 - d / rep) * 5;
+                            const d = Math.sqrt(d2), f = (1 - d / rep) * 4;
                             vx[i] += (dx / d) * f; vy[i] += (dy / d) * f;
                         }
                     }
-                    vx[i] *= 0.8; vy[i] *= 0.8;
+                    vx[i] *= 0.82; vy[i] *= 0.82;
                     px[i] += vx[i]; py[i] += vy[i];
                 }
                 ctx.moveTo(px[i] + size, py[i]);
                 ctx.arc(px[i], py[i], size, 0, 6.283);
             }
             ctx.fill();
-            // dotted ladybug (red) in the middle, gently bobbing
-            ctx.fillStyle = '#E71809';
-            ctx.beginPath();
-            const bob = reduceMotion ? 0 : Math.sin(time * 1.1) * 5;
-            if (ringBug) ringBug.style.transform = `translate(-50%, calc(-50% + ${bob}px))`;
-            for (let i = 0; bugPts && i < M; i++) {
-                const tx = bugPts[i * 2], ty = bugPts[i * 2 + 1] + bob;
-                if (reduceMotion) { qx[i] = tx; qy[i] = ty; }
-                else {
-                    qvx[i] += (tx - qx[i]) * 0.09; qvy[i] += (ty - qy[i]) * 0.09;
-                    if (mouse.active) {
-                        const dx = qx[i] - mouse.x, dy = qy[i] - mouse.y, d2 = dx * dx + dy * dy;
-                        if (d2 < rep2 && d2 > 0.01) {
-                            const d = Math.sqrt(d2), f = (1 - d / rep) * 2.5;
-                            qvx[i] += (dx / d) * f; qvy[i] += (dy / d) * f;
-                        }
-                    }
-                    qvx[i] *= 0.78; qvy[i] *= 0.78; qx[i] += qvx[i]; qy[i] += qvy[i];
-                }
-                ctx.moveTo(qx[i] + 1.05, qy[i]);
-                ctx.arc(qx[i], qy[i], 1.05, 0, 6.283);
-            }
-            ctx.fill();
             requestAnimationFrame(frame);
         };
 
-        ($('.intro') || canvas.parentElement).addEventListener('pointermove', e => {
+        intro.addEventListener('pointermove', e => {
             const r = canvas.getBoundingClientRect();
             mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.active = true;
         }, { passive: true });
-        ($('.intro') || canvas.parentElement).addEventListener('pointerleave', () => { mouse.active = false; mouse.x = mouse.y = -9999; });
+        intro.addEventListener('pointerleave', () => { mouse.active = false; });
 
         const start = () => {
             build();
             new IntersectionObserver(([e]) => {
                 const was = running; running = e.isIntersecting;
                 if (running && !was) requestAnimationFrame(frame);
-            }).observe(story);
+            }).observe(intro);
             let rt;
             addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(build, 200); });
         };
-        // rasterise the inline logo (explicit size + solid fill) to sample its shape
-        const inline = $('.logo-svg');
-        if (inline) {
-            const paths = $$('path', inline).map(el => `<path d="${el.getAttribute('d')}" fill="#000"/>`).join('');
-            const src = `<svg xmlns="http://www.w3.org/2000/svg" width="1142" height="338" viewBox="225 430 571 169">${paths}</svg>`;
-            logoImg = new Image();
-            const ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-            const bugReady = bugImg.complete ? Promise.resolve() : new Promise(res => { bugImg.onload = bugImg.onerror = res; });
-            logoImg.onload = logoImg.onerror = () => Promise.all([ready, bugReady]).then(start);
-            logoImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
-        } else start();
+        (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(start);
     }
 })();
