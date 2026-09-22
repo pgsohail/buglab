@@ -46,6 +46,10 @@
     } else {
         revealEls.forEach(el => el.classList.add('in'));
     }
+    // safety net: never leave on-screen content hidden
+    setTimeout(() => revealEls.forEach(el => {
+        if (el.getBoundingClientRect().top < innerHeight) el.classList.add('in');
+    }), 1500);
 
     /* ── Section dots ─────────────────────────────────── */
     const dots = $('#dots');
@@ -290,7 +294,7 @@
     /* ── Intro tagline: type / erase loop ─────────────── */
     const typeEl = $('#typeTag');
     if (typeEl && !reduceMotion) {
-        const phrases = ['Debug better. Build better.', 'Blockchain. AI. Data.', "Software that doesn't bite."];
+        const phrases = ['Debug better. Build better.', 'Blockchain. AI. Data.', 'Smart contracts. Clean data.'];
         let pi = 0, ci = phrases[0].length, deleting = true;
         const loop = () => {
             const full = phrases[pi];
@@ -310,7 +314,7 @@
 
     /* ── Intro particles: torus → DEBUG → BUILD → SHIP (auto loop) ── */
     const canvas = $('#particles');
-    const story = $('.intro-art');
+    const story = $('.intro');
     if (canvas && story) {
         const ctx = canvas.getContext('2d');
         const labelEl = $('#artLabel');
@@ -349,13 +353,17 @@
             return out;
         };
 
+        // shapes sit on the right half on wide screens, centred on small ones
+        const centerX = () => (W >= 900 ? W * 0.7 : W / 2);
+        const centerY = () => (W >= 900 ? H * 0.48 : H * 0.62);
         const wordShape = (word) => sample((o, w, h) => {
-            let fs = Math.min(h * 0.3, w * 0.3);
+            const box = w >= 900 ? w * 0.42 : w * 0.9;
+            let fs = Math.min(h * 0.26, box * 0.34);
             o.font = `700 ${fs}px Georgia, "Times New Roman", serif`;
             const m = o.measureText(word).width;
-            if (m > w * 0.88) { fs *= (w * 0.88) / m; o.font = `700 ${fs}px Georgia, "Times New Roman", serif`; }
+            if (m > box) { fs *= box / m; o.font = `700 ${fs}px Georgia, "Times New Roman", serif`; }
             o.textAlign = 'center'; o.textBaseline = 'middle';
-            o.fillText(word, w / 2, h * 0.5);
+            o.fillText(word, centerX(), centerY());
         });
 
         const logoShape = () => {
@@ -394,7 +402,7 @@
         // torus point i → screen xy + size (shape 0 is live, it rotates)
         const tor = { x: 0, y: 0, s: 1 };
         const torus = (i) => {
-            const R = Math.min(W, H) * 0.27;
+            const R = W >= 900 ? Math.min(W * 0.17, H * 0.28) : Math.min(W, H) * 0.3;
             const u = pu[i], v = pv[i];
             const Rr = R * (1 + 0.05 * Math.sin(3 * u + time * 0.9));
             const rr = R * 0.46 * (1 + 0.12 * Math.sin(2 * v + 4 * u + time * 1.3));
@@ -416,8 +424,8 @@
             let x3 = x1 * cy + z2 * sy, z3 = -x1 * sy + z2 * cy;
             const cam = R * 4;
             const f = cam / (cam - z3);
-            tor.x = W / 2 + x3 * f;
-            tor.y = H * 0.5 + y2 * f;
+            tor.x = centerX() + x3 * f;
+            tor.y = centerY() + y2 * f;
             tor.s = Math.max(0.35, 0.5 + ((z3 / (R * 1.5)) + 0.5) * 1.5);
             return tor;
         };
@@ -444,8 +452,8 @@
 
         const drawPet = () => {
             // little swirl-armed bug that drifts after the cursor
-            const tx = mouse.active ? mouse.x + 60 : W * 0.78 + Math.cos(time * 0.6) * 30;
-            const ty = mouse.active ? mouse.y - 60 : H * 0.14 + Math.sin(time * 0.8) * 16;
+            const tx = mouse.active ? mouse.x + 60 : W * (W >= 900 ? 0.86 : 0.8) + Math.cos(time * 0.6) * 30;
+            const ty = mouse.active ? mouse.y - 60 : H * 0.16 + Math.sin(time * 0.8) * 16;
             if (!pet.init) { pet.x = tx; pet.y = ty; pet.init = true; }
             const dx = tx - pet.x, dy = ty - pet.y;
             pet.x += dx * 0.05; pet.y += dy * 0.05;
