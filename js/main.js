@@ -1,354 +1,284 @@
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* bugslab — site interactions */
+(() => {
+    'use strict';
+    document.documentElement.classList.add('js');
 
-// Smooth scrolling for navigation links
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+    /* ── Year ─────────────────────────────────────────── */
+    const year = $('#year');
+    if (year) year.textContent = new Date().getFullYear();
+
+    /* ── Scroll: progress bar + header state ─────────── */
+    const progress = $('#progress');
+    const header = $('#header');
+    let ticking = false;
+    const onScroll = () => {
+        const max = document.documentElement.scrollHeight - innerHeight;
+        progress.style.transform = `scaleX(${max > 0 ? scrollY / max : 0})`;
+        header.classList.toggle('scrolled', scrollY > 20);
+        ticking = false;
+    };
+    addEventListener('scroll', () => { if (!ticking) { requestAnimationFrame(onScroll); ticking = true; } }, { passive: true });
+    onScroll();
+
+    /* ── Mobile menu ──────────────────────────────────── */
+    const menuBtn = $('#menuBtn');
+    const menu = $('#menu');
+    const setMenu = (open) => {
+        menuBtn.setAttribute('aria-expanded', String(open));
+        menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+        menu.hidden = !open;
+        document.body.style.overflow = open ? 'hidden' : '';
+    };
+    menuBtn.addEventListener('click', () => setMenu(menu.hidden));
+    $$('a', menu).forEach(a => a.addEventListener('click', () => setMenu(false)));
+    addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) setMenu(false); });
+
+    /* ── Reveal on scroll ─────────────────────────────── */
+    const revealEls = $$('.reveal');
+    if ('IntersectionObserver' in window && !reduceMotion) {
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const el = entry.target;
+                // stagger siblings that enter together
+                const idx = Number(el.dataset.stagger || 0);
+                setTimeout(() => el.classList.add('in'), idx * 90);
+                io.unobserve(el);
+            });
+        }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
+        // simple stagger index within the same parent
+        revealEls.forEach(el => {
+            const sibs = $$(':scope > .reveal', el.parentElement);
+            el.dataset.stagger = Math.min(sibs.indexOf(el), 5);
+            io.observe(el);
+        });
+    } else {
+        revealEls.forEach(el => el.classList.add('in'));
+    }
+
+    /* ── Section dots ─────────────────────────────────── */
+    const dots = $('#dots');
+    const dotLinks = $$('a', dots);
+    const targets = dotLinks.map(a => {
+        const id = a.getAttribute('href').slice(1);
+        return id === 'top' ? $('.hero') : document.getElementById(id);
+    });
+    const darkSections = $$('.dark, .marquee');
+    const updateDots = () => {
+        const mid = innerHeight * 0.45;
+        let active = 0;
+        targets.forEach((t, i) => { if (t && t.getBoundingClientRect().top <= mid) active = i; });
+        dotLinks.forEach((a, i) => a.classList.toggle('active', i === active));
+        const dy = dots.getBoundingClientRect();
+        const cy = dy.top + dy.height / 2;
+        dots.classList.toggle('on-dark', darkSections.some(s => {
+            const r = s.getBoundingClientRect();
+            return r.top < cy && r.bottom > cy;
+        }));
+    };
+    addEventListener('scroll', () => requestAnimationFrame(updateDots), { passive: true });
+    updateDots();
+
+    /* ── Eyes follow the cursor ───────────────────────── */
+    const eyes = $$('.eye');
+    let pointer = { x: innerWidth / 2, y: innerHeight / 3 };
+    const lookAt = () => {
+        eyes.forEach(eye => {
+            const r = eye.getBoundingClientRect();
+            if (r.bottom < 0 || r.top > innerHeight) return;
+            const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+            const ang = Math.atan2(pointer.y - cy, pointer.x - cx);
+            const dist = Math.min(r.width * 0.24, Math.hypot(pointer.x - cx, pointer.y - cy) / 12);
+            eye.firstElementChild.style.transform = `translate(${Math.cos(ang) * dist}px, ${Math.sin(ang) * dist}px)`;
+        });
+    };
+    if (!reduceMotion) {
+        addEventListener('pointermove', e => { pointer = { x: e.clientX, y: e.clientY }; requestAnimationFrame(lookAt); }, { passive: true });
+        addEventListener('scroll', () => requestAnimationFrame(lookAt), { passive: true });
+    }
+
+    /* ── Mascot: blink + speech bubble ────────────────── */
+    const mascot = $('#mascot');
+    const bubble = $('#bubble');
+    const lines = [
+        'Hi. I eat bugs.',
+        'Ship it. Then ship it again.',
+        'Smart contracts, audited.',
+        'Your data, but clean.',
+        'Tap me for another one.',
+        'Zero bugs is a lifestyle.'
+    ];
+    let line = 0;
+    const nextLine = () => {
+        bubble.classList.add('swap');
+        setTimeout(() => {
+            line = (line + 1) % lines.length;
+            bubble.textContent = lines[line];
+            bubble.classList.remove('swap');
+        }, 250);
+    };
+    const blink = () => {
+        mascot.classList.add('blink');
+        setTimeout(() => mascot.classList.remove('blink'), 140);
+    };
+    if (mascot) {
+        mascot.addEventListener('click', () => { blink(); nextLine(); });
+        if (!reduceMotion) {
+            setInterval(blink, 3800);
+            setInterval(nextLine, 5200);
+        }
+    }
+
+    /* ── Count-up stats ───────────────────────────────── */
+    const counters = $$('[data-count]');
+    if ('IntersectionObserver' in window && !reduceMotion) {
+        const cio = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const el = entry.target;
+                const end = Number(el.dataset.count);
+                const t0 = performance.now();
+                const dur = 1400;
+                const step = (t) => {
+                    const p = Math.min(1, (t - t0) / dur);
+                    el.textContent = Math.round(end * (1 - Math.pow(1 - p, 3)));
+                    if (p < 1) requestAnimationFrame(step);
+                };
+                el.textContent = '0';
+                requestAnimationFrame(step);
+                cio.unobserve(el);
+            });
+        }, { threshold: 0.6 });
+        counters.forEach(c => cio.observe(c));
+    }
+
+    /* ── Only one service row open at a time (per group) ─ */
+    $$('.svc-group').forEach(group => {
+        const items = $$('details', group);
+        items.forEach(d => d.addEventListener('toggle', () => {
+            if (d.open) items.forEach(o => { if (o !== d) o.open = false; });
+        }));
+    });
+
+    /* ── Contact form → opens email draft ─────────────── */
+    const form = $('#contactForm');
+    const note = $('#formNote');
+    if (form) {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const data = new FormData(form);
+            const subject = `New project: ${data.get('service')} (from ${data.get('name')})`;
+            const body = `Name: ${data.get('name')}\nEmail: ${data.get('email')}\nService: ${data.get('service')}\n\n${data.get('message')}`;
+            window.location.href = `mailto:support@bugslab.tech?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            note.textContent = 'Opening your email app… or reach us on WhatsApp.';
+        });
+    }
+
+    /* ── Toolkit: drag & throw physics ────────────────── */
+    const pit = $('#pit');
+    const tags = $$('#pitTags li');
+    let started = false;
+
+    const staticPit = () => pit.classList.add('static');
+
+    const startPhysics = () => {
+        if (started) return;
+        started = true;
+        const M = window.Matter;
+        if (!M || reduceMotion) { staticPit(); return; }
+
+        const { Engine, Runner, Bodies, Body, Composite, Mouse, MouseConstraint, Events } = M;
+        const engine = Engine.create({ gravity: { y: 1 } });
+        const world = engine.world;
+        let W = pit.clientWidth, H = pit.clientHeight;
+        const T = 200; // wall thickness
+
+        let walls = [];
+        const buildWalls = () => {
+            if (walls.length) Composite.remove(world, walls);
+            walls = [
+                Bodies.rectangle(W / 2, H + T / 2, W + T * 2, T, { isStatic: true }),
+                Bodies.rectangle(-T / 2, H / 2, T, H * 4, { isStatic: true }),
+                Bodies.rectangle(W + T / 2, H / 2, T, H * 4, { isStatic: true }),
+                Bodies.rectangle(W / 2, -H * 1.5 - T / 2, W + T * 2, T, { isStatic: true })
+            ];
+            Composite.add(world, walls);
+        };
+        buildWalls();
+
+        const bodies = tags.map((el, i) => {
+            const w = el.offsetWidth, h = el.offsetHeight;
+            const x = w / 2 + Math.random() * Math.max(1, W - w);
+            const y = -h - i * 60 - Math.random() * 80;
+            const b = Bodies.rectangle(x, y, w, h, {
+                chamfer: { radius: h / 2 - 1 },
+                restitution: 0.45, friction: 0.08, frictionAir: 0.012, density: 0.002
+            });
+            Body.setAngle(b, (Math.random() - 0.5) * 0.8);
+            b.el = el; b.w = w; b.h = h;
+            return b;
+        });
+        Composite.add(world, bodies);
+
+        const coarse = window.matchMedia('(pointer: coarse)').matches;
+        if (!coarse) {
+            const mouse = Mouse.create(pit);
+            // let the page scroll normally over the pit
+            mouse.element.removeEventListener('wheel', mouse.mousewheel);
+            mouse.element.removeEventListener('mousewheel', mouse.mousewheel);
+            mouse.element.removeEventListener('DOMMouseScroll', mouse.mousewheel);
+            const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.18, damping: 0.1 } });
+            Composite.add(world, mc);
+        } else {
+            const hint = $('#toolkit .section-head .mono');
+            if (hint) hint.textContent = 'Tap to shake things up. Every tag here runs in systems we\'ve shipped.';
+            // touch: tap to toss everything up instead of dragging (keeps page scroll working)
+            pit.addEventListener('click', () => {
+                bodies.forEach(b => Body.applyForce(b, b.position, {
+                    x: (Math.random() - 0.5) * 0.06 * b.mass * 10,
+                    y: -0.12 * b.mass * 10
+                }));
             });
         }
-        // Close mobile menu if open
-        closeMobileMenu();
-    });
-});
 
-// ── Scroll progress bar ───────────────────────────────────────────────────────
-const scrollProgress = document.getElementById('scrollProgress');
+        const runner = Runner.create();
+        Runner.run(runner, engine);
 
-// ── Hero parallax dissolve: hero content drifts up and fades as you scroll ──
-const heroParallax = document.querySelector('.hero .centered-hero');
-const heroSection = document.querySelector('.hero');
-
-let scrollTicking = false;
-
-function updateOnScroll() {
-    if (scrollProgress) {
-        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = scrollHeight > 0 ? (window.scrollY / scrollHeight) * 100 : 0;
-        scrollProgress.style.width = `${progress}%`;
-    }
-
-    if (heroParallax && heroSection && !prefersReducedMotion) {
-        const heroHeight = heroSection.offsetHeight || window.innerHeight;
-        const raw = window.scrollY / heroHeight;
-        const eased = Math.min(Math.max(raw, 0), 1);
-        heroParallax.style.transform = `translateY(${eased * -70}px) scale(${1 - eased * 0.08})`;
-        heroParallax.style.opacity = `${1 - eased * 1.15}`;
-    }
-
-    scrollTicking = false;
-}
-
-window.addEventListener('scroll', () => {
-    if (!scrollTicking) {
-        requestAnimationFrame(updateOnScroll);
-        scrollTicking = true;
-    }
-});
-
-updateOnScroll();
-
-// ── Scrollspy: highlight active nav link based on section in view ───────────
-const sections = document.querySelectorAll('section[id]');
-const navLinks = document.querySelectorAll('.mobile-menu ul li a');
-
-if (sections.length && navLinks.length) {
-    const spyObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const id = entry.target.getAttribute('id');
-                navLinks.forEach(link => {
-                    link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
-                });
-            }
+        Events.on(engine, 'afterUpdate', () => {
+            bodies.forEach(b => {
+                // rescue anything that escapes
+                if (b.position.y > H + 200 || b.position.x < -200 || b.position.x > W + 200) {
+                    Body.setPosition(b, { x: W / 2, y: -50 });
+                    Body.setVelocity(b, { x: 0, y: 0 });
+                }
+                b.el.style.transform = `translate(${b.position.x - b.w / 2}px, ${b.position.y - b.h / 2}px) rotate(${b.angle}rad)`;
+            });
         });
-    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
 
-    sections.forEach(section => spyObserver.observe(section));
-}
+        // pause when off-screen
+        const vis = new IntersectionObserver(([e]) => { runner.enabled = e.isIntersecting; }, { threshold: 0 });
+        vis.observe(pit);
 
-// ── Mobile menu toggle ───────────────────────────────────────────────────────
-const navToggle = document.getElementById('navToggle');
-const mobileMenu = document.getElementById('mobileMenu');
+        let rt;
+        addEventListener('resize', () => {
+            clearTimeout(rt);
+            rt = setTimeout(() => { W = pit.clientWidth; H = pit.clientHeight; buildWalls(); }, 150);
+        });
+    };
 
-function closeMobileMenu() {
-    mobileMenu?.classList.remove('open');
-    navToggle?.classList.remove('active');
-    document.body.style.overflow = '';
-}
-
-if (navToggle && mobileMenu) {
-    navToggle.addEventListener('click', () => {
-        const isOpen = mobileMenu.classList.contains('open');
-        if (isOpen) {
-            closeMobileMenu();
+    if (pit) {
+        if ('IntersectionObserver' in window) {
+            const pio = new IntersectionObserver(([e]) => {
+                if (e.isIntersecting) { pio.disconnect(); startPhysics(); }
+            }, { threshold: 0.35 });
+            // Matter loads with defer; wait for window load so it's available
+            addEventListener('load', () => pio.observe(pit));
         } else {
-            mobileMenu.classList.add('open');
-            navToggle.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-    });
-}
-
-// Close mobile menu on link click
-document.querySelectorAll('.mobile-nav-link').forEach(link => {
-    link.addEventListener('click', closeMobileMenu);
-});
-
-// ── Form submission ───────────────────────────────────────────────────────────
-const contactForm = document.getElementById('contactForm');
-if (contactForm) {
-    contactForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-
-        const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
-
-        alert(`Thank you, ${name}! Your message has been received. We'll get back to you at ${email} soon.`);
-
-        contactForm.reset();
-    });
-}
-
-// ── Scroll animations ─────────────────────────────────────────────────────────
-const scrollObserverOptions = {
-    threshold: 0.12,
-    rootMargin: '0px 0px -80px 0px'
-};
-
-const scrollObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            entry.target.classList.add('animate-in');
-            scrollObserver.unobserve(entry.target);
-        }
-    });
-}, scrollObserverOptions);
-
-window.addEventListener('load', () => {
-    document.querySelectorAll('.scroll-animate').forEach(element => {
-        scrollObserver.observe(element);
-    });
-});
-
-// ── Count-up animation for stat numbers ───────────────────────────────────────
-function animateCountUp(element) {
-    const raw = element.textContent.trim();
-    const match = raw.match(/^([\d.]+)(.*)$/);
-    if (!match) return;
-
-    const target = parseFloat(match[1]);
-    const suffix = match[2];
-    const decimals = (match[1].split('.')[1] || '').length;
-    const duration = 1400;
-    const start = performance.now();
-
-    function step(now) {
-        const elapsed = Math.min((now - start) / duration, 1);
-        const eased = 1 - Math.pow(1 - elapsed, 3);
-        const value = target * eased;
-        element.textContent = `${value.toFixed(decimals)}${suffix}`;
-
-        if (elapsed < 1) {
-            requestAnimationFrame(step);
-        } else {
-            element.textContent = raw;
+            staticPit();
         }
     }
-
-    requestAnimationFrame(step);
-}
-
-if (!prefersReducedMotion) {
-    const countUpObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                animateCountUp(entry.target);
-                countUpObserver.unobserve(entry.target);
-            }
-        });
-    }, { threshold: 0.5 });
-
-    window.addEventListener('load', () => {
-        document.querySelectorAll('.count-up').forEach(element => {
-            countUpObserver.observe(element);
-        });
-    });
-}
-
-// ── Random crawling bugs: appear occasionally, not continuously ─────────────
-function randomizeBug(el) {
-    const halfW = window.innerWidth / 2;
-    const halfH = window.innerHeight / 2;
-    const buffer = 160;
-    const edge = ['top', 'bottom', 'left', 'right'][Math.floor(Math.random() * 4)];
-
-    let x, y;
-    if (edge === 'top' || edge === 'bottom') {
-        x = (Math.random() * 1.6 - 0.8) * halfW;
-        y = (halfH + buffer) * (edge === 'top' ? -1 : 1);
-    } else {
-        x = (halfW + buffer) * (edge === 'left' ? -1 : 1);
-        y = (Math.random() * 1.6 - 0.8) * halfH;
-    }
-
-    const rotStart = Math.random() * 20 - 10;
-    const rotEnd = (Math.random() < 0.5 ? -1 : 1) * (170 + Math.random() * 90);
-    const duration = 18 + Math.random() * 8; // slow, unhurried crawl
-
-    el.style.setProperty('--bug-x', `${x}px`);
-    el.style.setProperty('--bug-y', `${y}px`);
-    el.style.setProperty('--bug-rot-start', `${rotStart}deg`);
-    el.style.setProperty('--bug-rot-end', `${rotEnd}deg`);
-    return duration;
-}
-
-// Only ever one bug on screen at a time, appearing every so often with
-// real quiet gaps in between, instead of a constant swarm.
-if (!prefersReducedMotion) {
-    window.addEventListener('load', () => {
-        const bugs = Array.from(document.querySelectorAll('.crawling-bugs .bug'));
-        bugs.forEach(el => { el.style.animation = 'none'; });
-        if (!bugs.length) return;
-
-        let busy = false;
-
-        function trySpawn() {
-            if (busy || Math.random() > 0.55) return;
-            busy = true;
-
-            const el = bugs[Math.floor(Math.random() * bugs.length)];
-            const duration = randomizeBug(el);
-            el.style.animation = `bugCycle ${duration}s ease-in-out 1`;
-
-            el.addEventListener('animationend', function handler() {
-                el.removeEventListener('animationend', handler);
-                el.style.animation = 'none';
-                busy = false;
-            }, { once: true });
-        }
-
-        function loop() {
-            trySpawn();
-            setTimeout(loop, 6000 + Math.random() * 6000);
-        }
-
-        setTimeout(loop, 1500);
-    });
-}
-
-// ── Typing animation ──────────────────────────────────────────────────────────
-function continuousTyping() {
-    const typingElement = document.getElementById('typingText');
-    if (!typingElement) return;
-
-    const phrases = [
-        '_quality_control_start();',
-        '_build_something_great();',
-        '_debug_and_deploy();',
-        '_automate_your_finances();',
-        '_ship_production_code();',
-    ];
-
-    let phraseIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-
-    function type() {
-        const current = phrases[phraseIndex];
-
-        if (isDeleting) {
-            typingElement.textContent = current.substring(0, charIndex - 1);
-            charIndex--;
-        } else {
-            typingElement.textContent = current.substring(0, charIndex + 1);
-            charIndex++;
-        }
-
-        let delay = isDeleting ? 40 : 70;
-
-        if (!isDeleting && charIndex === current.length) {
-            delay = 2000;
-            isDeleting = true;
-        } else if (isDeleting && charIndex === 0) {
-            isDeleting = false;
-            phraseIndex = (phraseIndex + 1) % phrases.length;
-            delay = 400;
-        }
-
-        setTimeout(type, delay);
-    }
-
-    setTimeout(type, 1200);
-}
-
-// ── Logo bug eating effect ─────────────────────────────────────────────────────
-window.addEventListener('load', () => {
-    continuousTyping();
-
-    const logoSvgContainer = document.querySelector('.logo-svg-container');
-    const mainLogo = document.getElementById('mainLogo');
-
-    if (mainLogo) {
-        mainLogo.classList.add('bugs-fixed');
-    }
-
-    function triggerBugEating() {
-        logoSvgContainer?.classList.add('eating');
-
-        if (mainLogo) {
-            mainLogo.classList.remove('bugs-fixed');
-            mainLogo.classList.add('bugs-eating');
-        }
-
-        setTimeout(() => {
-            logoSvgContainer?.classList.remove('eating');
-            if (mainLogo) {
-                mainLogo.classList.remove('bugs-eating');
-                mainLogo.classList.add('bugs-fixed');
-            }
-        }, 1500);
-    }
-
-    setInterval(triggerBugEating, 12000);
-    setTimeout(triggerBugEating, 3500);
-});
-
-// ── Theme Toggle ─────────────────────────────────────────────────────────────
-function setupThemeToggle(toggleId) {
-    const toggle = document.getElementById(toggleId);
-    if (!toggle) return;
-    const icon = toggle.querySelector('.theme-icon');
-    const html = document.documentElement;
-
-    const saved = localStorage.getItem('theme') || 'light';
-    html.setAttribute('data-theme', saved);
-    if (icon) icon.textContent = saved === 'dark' ? '☀️' : '🌙';
-
-    toggle.addEventListener('click', () => {
-        const current = html.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        html.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-
-        // Sync all theme toggles
-        document.querySelectorAll('.theme-icon').forEach(i => {
-            i.textContent = next === 'dark' ? '☀️' : '🌙';
-        });
-    });
-}
-
-setupThemeToggle('themeToggleFooter');
-
-// Apply saved theme immediately to prevent flash
-(function () {
-    const saved = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', saved);
-    document.querySelectorAll('.theme-icon').forEach(i => {
-        i.textContent = saved === 'dark' ? '☀️' : '🌙';
-    });
 })();
