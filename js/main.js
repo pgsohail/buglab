@@ -65,7 +65,7 @@
     const dotLinks = $$('a', dots);
     const targets = dotLinks.map(a => {
         const id = a.getAttribute('href').slice(1);
-        return id === 'top' ? $('.hero') : document.getElementById(id);
+        return id === 'top' ? $('.intro') : document.getElementById(id);
     });
     const darkSections = $$('.dark, .marquee');
     const updateDots = () => {
@@ -280,5 +280,288 @@
         } else {
             staticPit();
         }
+    }
+
+    /* ── Custom cursor dot ────────────────────────────── */
+    const cursor = $('#cursor');
+    if (cursor && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+        let cx = -100, cy = -100, tx = -100, ty = -100;
+        addEventListener('pointermove', e => {
+            tx = e.clientX; ty = e.clientY; cursor.classList.add('on');
+            cursor.classList.toggle('big', !!e.target.closest('a, button, summary, .card, .pit-tags li, select, input, textarea'));
+        }, { passive: true });
+        document.addEventListener('pointerleave', () => cursor.classList.remove('on'));
+        const tick = () => {
+            cx += (tx - cx) * (reduceMotion ? 1 : 0.22);
+            cy += (ty - cy) * (reduceMotion ? 1 : 0.22);
+            cursor.style.transform = `translate(${cx}px, ${cy}px)`;
+            requestAnimationFrame(tick);
+        };
+        tick();
+    }
+
+    /* ── Intro tagline: type / erase loop ─────────────── */
+    const typeEl = $('#typeTag');
+    if (typeEl && !reduceMotion) {
+        const phrases = ['Debug better. Build better.', 'Blockchain. AI. Data.', "Software that doesn't bite."];
+        let pi = 0, ci = phrases[0].length, deleting = true;
+        const loop = () => {
+            const full = phrases[pi];
+            if (deleting) {
+                ci--;
+                typeEl.textContent = full.slice(0, ci);
+                if (ci <= 0) { deleting = false; pi = (pi + 1) % phrases.length; return setTimeout(loop, 350); }
+                return setTimeout(loop, 28);
+            }
+            ci++;
+            typeEl.textContent = phrases[pi].slice(0, ci);
+            if (ci >= phrases[pi].length) { deleting = true; return setTimeout(loop, 2200); }
+            setTimeout(loop, 60);
+        };
+        setTimeout(loop, 3200);
+    }
+
+    /* ── Particle story: torus → DEBUG → BUILD → logo ─── */
+    const canvas = $('#particles');
+    const story = $('#story');
+    if (canvas && story) {
+        const ctx = canvas.getContext('2d');
+        const stepEl = $('#storyStep');
+        const lineEl = $('#storyLine');
+        const captions = [
+            'Every product starts as a loop of ideas.',
+            'We debug what is broken.',
+            'We build what is missing.',
+            'That is bugslab.'
+        ];
+        let W = 0, H = 0, DPR = 1, N = 0, NU = 0, NV = 0;
+        let px, py, vx, vy, pu, pv, delay, shapes = [];
+        let running = false, time = 0, lastStage = -1;
+        const mouse = { x: -9999, y: -9999, active: false };
+        const pet = { x: 0, y: 0, rot: 0, init: false };
+        let logoImg = null;
+
+        const sample = (draw) => {
+            const off = document.createElement('canvas');
+            off.width = Math.max(1, Math.floor(W)); off.height = Math.max(1, Math.floor(H));
+            const o = off.getContext('2d');
+            draw(o, off.width, off.height);
+            const data = o.getImageData(0, 0, off.width, off.height).data;
+            const step = W < 700 ? 3 : 4;
+            const pts = [];
+            for (let y = 0; y < off.height; y += step) {
+                for (let x = 0; x < off.width; x += step) {
+                    if (data[(y * off.width + x) * 4 + 3] > 120) pts.push(x, y);
+                }
+            }
+            const count = pts.length / 2;
+            const out = new Float32Array(N * 2);
+            if (!count) return out;
+            // shuffle order so particles spread evenly over the glyphs
+            const idx = Array.from({ length: count }, (_, i) => i);
+            for (let i = count - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [idx[i], idx[j]] = [idx[j], idx[i]]; }
+            for (let i = 0; i < N; i++) {
+                const k = idx[i % count];
+                out[i * 2] = pts[k * 2] + (Math.random() - 0.5) * step * 1.3;
+                out[i * 2 + 1] = pts[k * 2 + 1] + (Math.random() - 0.5) * step * 1.3;
+            }
+            return out;
+        };
+
+        const wordShape = (word) => sample((o, w, h) => {
+            let fs = Math.min(h * 0.36, w * 0.3);
+            o.font = `700 ${fs}px Georgia, "Times New Roman", serif`;
+            const m = o.measureText(word).width;
+            if (m > w * 0.8) { fs *= (w * 0.8) / m; o.font = `700 ${fs}px Georgia, "Times New Roman", serif`; }
+            o.textAlign = 'center'; o.textBaseline = 'middle';
+            o.fillText(word, w / 2, h * 0.46);
+        });
+
+        const logoShape = () => {
+            if (!logoImg || !logoImg.complete || !logoImg.naturalWidth) return wordShape('bugslab');
+            return sample((o, w, h) => {
+                const lw = Math.min(w * (w < 700 ? 0.94 : 0.82), 980);
+                const lh = lw * (169 / 571);
+                o.drawImage(logoImg, (w - lw) / 2, h * 0.46 - lh / 2, lw, lh);
+            });
+        };
+
+        const build = () => {
+            const r = canvas.getBoundingClientRect();
+            W = r.width; H = r.height;
+            DPR = Math.min(2, devicePixelRatio || 1);
+            canvas.width = W * DPR; canvas.height = H * DPR;
+            ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+            const small = W < 700;
+            NU = small ? 90 : 130; NV = small ? 28 : 38;
+            const newN = NU * NV;
+            if (newN !== N) {
+                N = newN;
+                px = new Float32Array(N); py = new Float32Array(N);
+                vx = new Float32Array(N); vy = new Float32Array(N);
+                pu = new Float32Array(N); pv = new Float32Array(N); delay = new Float32Array(N);
+                for (let i = 0; i < N; i++) {
+                    pu[i] = ((i % NU) / NU) * Math.PI * 2;
+                    pv[i] = (Math.floor(i / NU) / NV) * Math.PI * 2;
+                    delay[i] = Math.random();
+                    px[i] = W / 2; py[i] = H / 2;
+                }
+            }
+            shapes = [null, wordShape('DEBUG'), wordShape('BUILD'), logoShape()];
+        };
+
+        // torus point i → screen xy + size (shape 0 is live, it rotates)
+        const tor = { x: 0, y: 0, s: 1 };
+        const torus = (i) => {
+            const R = Math.min(W, H) * (W < 700 ? 0.27 : 0.3);
+            const u = pu[i], v = pv[i];
+            const Rr = R * (1 + 0.05 * Math.sin(3 * u + time * 0.9));
+            const rr = R * 0.46 * (1 + 0.12 * Math.sin(2 * v + 4 * u + time * 1.3));
+            let x = (Rr + rr * Math.cos(v)) * Math.cos(u);
+            let y = (Rr + rr * Math.cos(v)) * Math.sin(u);
+            let z = rr * Math.sin(v);
+            // spin around own axis
+            const a = time * 0.18;
+            const ca = Math.cos(a), sa = Math.sin(a);
+            let x1 = x * ca - y * sa, y1 = x * sa + y * ca;
+            // tilt (x-axis) + mouse sway (y-axis)
+            const mx = mouse.active ? (mouse.x / W - 0.5) : 0;
+            const my = mouse.active ? (mouse.y / H - 0.5) : 0;
+            const tilt = 0.55 + my * 0.5;
+            const ct = Math.cos(tilt), st = Math.sin(tilt);
+            let y2 = y1 * ct - z * st, z2 = y1 * st + z * ct;
+            const yaw = mx * 0.7;
+            const cy = Math.cos(yaw), sy = Math.sin(yaw);
+            let x3 = x1 * cy + z2 * sy, z3 = -x1 * sy + z2 * cy;
+            const cam = R * 4;
+            const f = cam / (cam - z3);
+            tor.x = W / 2 + x3 * f;
+            tor.y = H * 0.46 + y2 * f;
+            tor.s = Math.max(0.35, 0.5 + ((z3 / (R * 1.5)) + 0.5) * 1.5);
+            return tor;
+        };
+
+        const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        const keys = [0, 0.16, 0.3, 0.44, 0.58, 0.72, 0.86, 1];
+        const vals = [0, 0, 1, 1, 2, 2, 3, 3];
+        const stageAt = (p) => {
+            for (let k = 0; k < keys.length - 1; k++) {
+                if (p <= keys[k + 1]) {
+                    const t = (p - keys[k]) / (keys[k + 1] - keys[k]);
+                    return vals[k] + (vals[k + 1] - vals[k]) * t;
+                }
+            }
+            return 3;
+        };
+
+        const setCaption = (st) => {
+            const k = Math.min(3, Math.round(st));
+            if (k === lastStage) return;
+            lastStage = k;
+            stepEl.textContent = `0${k + 1} / 04`;
+            lineEl.classList.add('swap');
+            setTimeout(() => { lineEl.textContent = captions[k]; lineEl.classList.remove('swap'); }, 220);
+        };
+
+        const drawPet = () => {
+            // little swirl-armed bug that drifts after the cursor
+            const tx = mouse.active ? mouse.x + 60 : W * 0.62 + Math.cos(time * 0.6) * 40;
+            const ty = mouse.active ? mouse.y - 60 : H * 0.2 + Math.sin(time * 0.8) * 20;
+            if (!pet.init) { pet.x = tx; pet.y = ty; pet.init = true; }
+            const dx = tx - pet.x, dy = ty - pet.y;
+            pet.x += dx * 0.05; pet.y += dy * 0.05;
+            const speed = Math.min(1, Math.hypot(dx, dy) / 200);
+            pet.rot += 0.03 + speed * 0.15;
+            ctx.fillStyle = 'rgba(18,20,16,.55)';
+            ctx.beginPath();
+            for (let arm = 0; arm < 2; arm++) {
+                for (let j = 0; j < 24; j++) {
+                    const ang = pet.rot + arm * Math.PI + j * 0.17;
+                    const rad = 16 + j * 2.3;
+                    const s = 1.9 - j * 0.06;
+                    const x = pet.x + Math.cos(ang) * rad, y = pet.y + Math.sin(ang) * rad;
+                    ctx.moveTo(x + s, y); ctx.arc(x, y, s, 0, Math.PI * 2);
+                }
+            }
+            ctx.fill();
+            ctx.fillStyle = '#121410';
+            ctx.beginPath(); ctx.arc(pet.x, pet.y + 3, 10, 0, Math.PI * 2); ctx.fill();
+            const look = Math.atan2(dy || 1, dx || 1);
+            for (const ex of [-9, 9]) {
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(pet.x + ex, pet.y - 5, 7, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#121410';
+                ctx.beginPath(); ctx.arc(pet.x + ex + Math.cos(look) * 2.6, pet.y - 5 + Math.sin(look) * 2.6, 3.2, 0, Math.PI * 2); ctx.fill();
+            }
+        };
+
+        const frame = () => {
+            if (!running) return;
+            time += reduceMotion ? 0 : 1 / 60;
+            const r = story.getBoundingClientRect();
+            const p = Math.min(1, Math.max(0, -r.top / (r.height - innerHeight)));
+            const st = stageAt(p);
+            setCaption(st);
+            const from = Math.min(2, Math.floor(st));
+            const t = st - from;
+            const A = shapes[from], B = shapes[from + 1];
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#121410';
+            ctx.beginPath();
+            const rep = W < 700 ? 60 : 110, rep2 = rep * rep;
+            for (let i = 0; i < N; i++) {
+                // staggered morph per particle
+                const ti = ease(Math.min(1, Math.max(0, t * 1.5 - delay[i] * 0.5)));
+                let ax, ay, as, bx, by, bs;
+                if (from === 0) { const q = torus(i); ax = q.x; ay = q.y; as = q.s; }
+                else { ax = A[i * 2]; ay = A[i * 2 + 1]; as = 1.25; }
+                bx = B[i * 2]; by = B[i * 2 + 1]; bs = 1.25;
+                const tx = ax + (bx - ax) * ti, ty = ay + (by - ay) * ti, size = as + (bs - as) * ti;
+                if (reduceMotion) { px[i] = tx; py[i] = ty; }
+                else {
+                    vx[i] += (tx - px[i]) * 0.075;
+                    vy[i] += (ty - py[i]) * 0.075;
+                    if (mouse.active) {
+                        const dx = px[i] - mouse.x, dy = py[i] - mouse.y, d2 = dx * dx + dy * dy;
+                        if (d2 < rep2 && d2 > 0.01) {
+                            const d = Math.sqrt(d2), f = (1 - d / rep) * 5;
+                            vx[i] += (dx / d) * f; vy[i] += (dy / d) * f;
+                        }
+                    }
+                    vx[i] *= 0.8; vy[i] *= 0.8;
+                    px[i] += vx[i]; py[i] += vy[i];
+                }
+                ctx.moveTo(px[i] + size, py[i]);
+                ctx.arc(px[i], py[i], size, 0, 6.283);
+            }
+            ctx.fill();
+            drawPet();
+            requestAnimationFrame(frame);
+        };
+
+        canvas.parentElement.addEventListener('pointermove', e => {
+            const r = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.active = true;
+        }, { passive: true });
+        canvas.parentElement.addEventListener('pointerleave', () => { mouse.active = false; mouse.x = mouse.y = -9999; });
+
+        const start = () => {
+            build();
+            new IntersectionObserver(([e]) => {
+                const was = running; running = e.isIntersecting;
+                if (running && !was) requestAnimationFrame(frame);
+            }).observe(story);
+            let rt;
+            addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(build, 200); });
+        };
+        // rasterise the inline logo (explicit size + solid fill) to sample its shape
+        const inline = $('.logo-svg');
+        if (inline) {
+            const paths = $$('path', inline).map(el => `<path d="${el.getAttribute('d')}" fill="#000"/>`).join('');
+            const src = `<svg xmlns="http://www.w3.org/2000/svg" width="1142" height="338" viewBox="225 430 571 169">${paths}</svg>`;
+            logoImg = new Image();
+            logoImg.onload = logoImg.onerror = start;
+            logoImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
+        } else start();
     }
 })();
