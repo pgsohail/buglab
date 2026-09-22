@@ -239,6 +239,27 @@
         const runner = Runner.create();
         Runner.run(runner, engine);
 
+        // flash tags when they collide hard
+        Events.on(engine, 'collisionStart', ev => {
+            ev.pairs.forEach(p => [p.bodyA, p.bodyB].forEach(b => {
+                if (!b.el || b.speed < 2.5) return;
+                b.el.classList.add('hit');
+                clearTimeout(b.hitT);
+                b.hitT = setTimeout(() => b.el.classList.remove('hit'), 220);
+            }));
+        });
+        // every few seconds a random tag hops, so the pit never sits still
+        const statusEl = $('#pitStatus');
+        const found = ['bug found in Solidity', 'patched: data pipeline', 'LLM agent online', 'tests passing', 'deploying to AWS', 'scanning stack…'];
+        let si = 0;
+        setInterval(() => {
+            if (!runner.enabled) return;
+            const b = bodies[(Math.random() * bodies.length) | 0];
+            Body.setVelocity(b, { x: (Math.random() - 0.5) * 10, y: -10 - Math.random() * 6 });
+            Body.setAngularVelocity(b, (Math.random() - 0.5) * 0.35);
+            if (statusEl) { si = (si + 1) % found.length; statusEl.textContent = found[si]; }
+        }, 2600);
+
         Events.on(engine, 'afterUpdate', () => {
             bodies.forEach(b => {
                 // rescue anything that escapes
@@ -366,6 +387,39 @@
             o.fillText(word, centerX(), centerY());
         });
 
+        // word repeated around a circle (+ a small inner ring), stored relative to the centre
+        const ringR = () => (W >= 900 ? Math.min(W * 0.17, H * 0.3) : Math.min(W, H) * 0.34);
+        const ringShape = (word) => {
+            const cx = centerX(), cy = centerY();
+            const arr = sample((o) => {
+                const drawRing = (text, r, fs, weight) => {
+                    o.font = `${weight} ${fs}px Georgia, "Times New Roman", serif`;
+                    const unit = text + '  •  ';
+                    const unitW = o.measureText(unit).width;
+                    const reps = Math.max(1, Math.round((Math.PI * 2 * r) / unitW));
+                    const full = unit.repeat(reps);
+                    const total = o.measureText(full).width;
+                    let acc = 0;
+                    o.textAlign = 'center'; o.textBaseline = 'middle';
+                    for (const ch of full) {
+                        const cw = o.measureText(ch).width;
+                        const ang = ((acc + cw / 2) / total) * Math.PI * 2 - Math.PI / 2;
+                        o.save();
+                        o.translate(cx + Math.cos(ang) * r, cy + Math.sin(ang) * r);
+                        o.rotate(ang + Math.PI / 2);
+                        o.fillText(ch, 0, 0);
+                        o.restore();
+                        acc += cw;
+                    }
+                };
+                const r = ringR();
+                drawRing(word, r, r * 0.3, 700);
+                drawRing('BUGSLAB', r * 0.56, r * 0.13, 700);
+            });
+            for (let i = 0; i < arr.length; i += 2) { arr[i] -= cx; arr[i + 1] -= cy; }
+            return arr;
+        };
+
         const logoShape = () => {
             if (!logoImg || !logoImg.complete || !logoImg.naturalWidth) return wordShape('bugslab');
             return sample((o, w, h) => {
@@ -396,7 +450,7 @@
                     px[i] = W / 2; py[i] = H / 2;
                 }
             }
-            shapes = [null, wordShape('DEBUG'), wordShape('BUILD'), wordShape('SHIP')];
+            shapes = [null, ringShape('DEBUG'), ringShape('BUILD'), ringShape('SHIP')];
         };
 
         // torus point i → screen xy + size (shape 0 is live, it rotates)
@@ -489,6 +543,8 @@
             const from = stg.from, to = stg.to, t = stg.t;
             setCaption(t > 0.5 ? to : from);
             const A = shapes[from], B = shapes[to];
+            const rot = reduceMotion ? 0 : time * 0.32;
+            const rc = Math.cos(rot), rs = Math.sin(rot), cxN = centerX(), cyN = centerY();
             ctx.clearRect(0, 0, W, H);
             ctx.fillStyle = '#121410';
             ctx.beginPath();
@@ -498,9 +554,9 @@
                 const ti = ease(Math.min(1, Math.max(0, t * 1.5 - delay[i] * 0.5)));
                 let ax, ay, as, bx, by, bs;
                 if (from === 0) { const q = torus(i); ax = q.x; ay = q.y; as = q.s; }
-                else { ax = A[i * 2]; ay = A[i * 2 + 1]; as = 1.25; }
+                else { const rx = A[i * 2], ry = A[i * 2 + 1]; ax = cxN + rx * rc - ry * rs; ay = cyN + rx * rs + ry * rc; as = 1.25; }
                 if (to === 0) { const q = torus(i); bx = q.x; by = q.y; bs = q.s; }
-                else { bx = B[i * 2]; by = B[i * 2 + 1]; bs = 1.25; }
+                else { const rx = B[i * 2], ry = B[i * 2 + 1]; bx = cxN + rx * rc - ry * rs; by = cyN + rx * rs + ry * rc; bs = 1.25; }
                 const tx = ax + (bx - ax) * ti, ty = ay + (by - ay) * ti, size = as + (bs - as) * ti;
                 if (reduceMotion) { px[i] = tx; py[i] = ty; }
                 else {
