@@ -321,6 +321,10 @@ details[open] > p { animation: open .45s var(--ease); }
 .intro-meta p:not(.label) { font-weight: 600; font-size: 14px; }
 .intro-meta a { text-decoration: none; }
 .intro-meta a:hover { text-decoration: underline; }
+.logo-stack > svg, .logo-stack > .lgw { transition: opacity 1.1s var(--ease); }
+.intro::after { transition: opacity 1.1s var(--ease); }
+.intro.dotting::after { opacity: .35; }
+.logo-stack.dotted > svg, .logo-stack.dotted > .lgw { opacity: 0; }
 .tf-ch { display: inline-block; color: transparent; -webkit-background-clip: text; background-clip: text; background-repeat: no-repeat; }
 /* googly eyes sitting on the ladybug in the logo's "b" */
 .logo-eyes { position: absolute; inset: 0; z-index: 3; pointer-events: none; }

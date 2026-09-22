@@ -478,19 +478,22 @@
         const mouse = { x: -9999, y: -9999, active: false };
 
         // sample the pixels of a big word and hand one target point to every particle
-        const wordShape = (word) => {
+        // rasterised copy of the logo (solid fill) used as the dot target
+        let logoImg = null;
+        const logoRect = () => {
+            const s = $('.intro-logo .logo-stack'), c = canvas.getBoundingClientRect();
+            if (!s) return null;
+            const r = s.getBoundingClientRect();
+            return { x: r.left - c.left, y: r.top - c.top, w: r.width, h: r.height };
+        };
+        const logoShape = () => {
             const off = document.createElement('canvas');
             off.width = Math.max(1, Math.floor(W)); off.height = Math.max(1, Math.floor(H));
             const o = off.getContext('2d');
-            let fs = H * 0.42;
-            o.font = `900 ${fs}px "Bricolage Grotesque", "Arial Black", Arial, sans-serif`;
-            const m = o.measureText(word).width;
-            const box = W * 0.92;
-            if (m > box) { fs *= box / m; o.font = `900 ${fs}px "Bricolage Grotesque", "Arial Black", Arial, sans-serif`; }
-            o.textAlign = 'center'; o.textBaseline = 'middle';
-            o.fillText(word, W / 2, H * 0.5);
+            const lr = logoRect();
+            if (logoImg && logoImg.naturalWidth && lr) o.drawImage(logoImg, lr.x, lr.y, lr.w, lr.h);
             const data = o.getImageData(0, 0, off.width, off.height).data;
-            const step = W < 700 ? 3 : 4, pts = [];
+            const step = 2, pts = [];
             for (let y = 0; y < off.height; y += step)
                 for (let x = 0; x < off.width; x += step)
                     if (data[(y * off.width + x) * 4 + 3] > 120) pts.push(x, y);
@@ -524,7 +527,7 @@
                 px[i] = gx[i]; py[i] = gy[i];
                 delay[i] = Math.random();
             }
-            words = { DEBUG: wordShape('DEBUG'), BUILD: wordShape('BUILD'), SHIP: wordShape('SHIP') };
+            words = { logo: logoShape() };
         };
 
         // the resting field: a grid that ripples like a slow wave; dot size follows the wave height
@@ -539,8 +542,11 @@
         };
 
         // timeline: field → DEBUG → field → BUILD → field → SHIP → (loop)
-        const seq = ['field', 'DEBUG', 'field', 'BUILD', 'field', 'SHIP'];
-        const HOLD = { field: 5.5, word: 3.8 }, MORPH = 2.6;
+        // timeline: field → dots gather into the logo (solid logo dissolves) → back to field
+        const seq = ['field', 'logo'];
+        const HOLD = { field: 6, word: 4.5 }, MORPH = 2.8;
+        const stack = $('.intro-logo .logo-stack');
+        let dotted = false;
         const holdOf = k => (seq[k] === 'field' ? HOLD.field : HOLD.word);
         const CYCLE = seq.reduce((s, _, k) => s + holdOf(k) + MORPH, 0);
         const stageAt = (tm) => {
@@ -561,6 +567,9 @@
             const st = reduceMotion ? { a: 'field', b: 'field', t: 0 } : stageAt(time);
             const A = st.a === 'field' ? null : words[st.a];
             const B = st.b === 'field' ? null : words[st.b];
+            // hide the solid logo while the dotted one is assembled, bring it back as the dots leave
+            const wantDots = (st.a === 'logo' && st.b === 'logo') || (st.b === 'logo' && st.t > 0.55) || (st.a === 'logo' && st.b !== 'logo' && st.t < 0.3);
+            if (stack && wantDots !== dotted) { dotted = wantDots; stack.classList.toggle('dotted', dotted); intro.classList.toggle('dotting', dotted); }
             ctx.clearRect(0, 0, W, H);
             ctx.fillStyle = '#121410';
             ctx.beginPath();
@@ -606,6 +615,14 @@
             let rt;
             addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(build, 200); });
         };
-        (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(start);
+        const inline = $('.logo-red');
+        const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+        if (inline) {
+            const paths = $$('path', inline).map(el => `<path d="${el.getAttribute('d')}" fill="#000"/>`).join('');
+            logoImg = new Image();
+            const imgReady = new Promise(res => { logoImg.onload = logoImg.onerror = res; });
+            logoImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="1713" height="507" viewBox="225 430 571 169">${paths}</svg>`);
+            Promise.all([fontsReady, imgReady]).then(start);
+        } else fontsReady.then(start);
     }
 })();
