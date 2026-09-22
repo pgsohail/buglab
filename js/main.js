@@ -124,6 +124,12 @@
         }
     }
 
+    /* ── Ring ladybug: blink now and then ─────────────── */
+    const rb = $('#ringBug');
+    if (rb && !reduceMotion) {
+        setInterval(() => { rb.classList.add('blink'); setTimeout(() => rb.classList.remove('blink'), 150); }, 3400);
+    }
+
     /* ── Count-up stats ───────────────────────────────── */
     const counters = $$('[data-count]');
     if ('IntersectionObserver' in window && !reduceMotion) {
@@ -353,7 +359,7 @@
             const o = off.getContext('2d');
             draw(o, off.width, off.height);
             const data = o.getImageData(0, 0, off.width, off.height).data;
-            const step = W < 700 ? 3 : 4;
+            const step = W < 700 ? 2 : 3;
             const pts = [];
             for (let y = 0; y < off.height; y += step) {
                 for (let x = 0; x < off.width; x += step) {
@@ -368,8 +374,8 @@
             for (let i = count - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [idx[i], idx[j]] = [idx[j], idx[i]]; }
             for (let i = 0; i < N; i++) {
                 const k = idx[i % count];
-                out[i * 2] = pts[k * 2] + (Math.random() - 0.5) * step * 1.3;
-                out[i * 2 + 1] = pts[k * 2 + 1] + (Math.random() - 0.5) * step * 1.3;
+                out[i * 2] = pts[k * 2] + (Math.random() - 0.5) * step * 0.8;
+                out[i * 2 + 1] = pts[k * 2 + 1] + (Math.random() - 0.5) * step * 0.8;
             }
             return out;
         };
@@ -393,8 +399,8 @@
             const cx = centerX(), cy = centerY();
             const arr = sample((o) => {
                 const drawRing = (text, r, fs, weight) => {
-                    o.font = `${weight} ${fs}px Georgia, "Times New Roman", serif`;
-                    const unit = text + '  •  ';
+                    o.font = `${weight} ${fs}px "Bricolage Grotesque", "Arial Black", Arial, sans-serif`;
+                    const unit = text + ' • ';
                     const unitW = o.measureText(unit).width;
                     const reps = Math.max(1, Math.round((Math.PI * 2 * r) / unitW));
                     const full = unit.repeat(reps);
@@ -413,8 +419,7 @@
                     }
                 };
                 const r = ringR();
-                drawRing(word, r, r * 0.3, 700);
-                drawRing('BUGSLAB', r * 0.56, r * 0.13, 700);
+                drawRing(word, r, r * 0.34, 800);
             });
             for (let i = 0; i < arr.length; i += 2) { arr[i] -= cx; arr[i + 1] -= cy; }
             return arr;
@@ -429,6 +434,14 @@
             });
         };
 
+        const ringBug = $('#ringBug');
+        const placeBug = () => {
+            if (!ringBug) return;
+            const r = ringR();
+            ringBug.style.left = centerX() + 'px';
+            ringBug.style.top = centerY() + 'px';
+            ringBug.style.width = (r * 0.95) + 'px';
+        };
         const build = () => {
             const r = canvas.getBoundingClientRect();
             W = r.width; H = r.height;
@@ -436,7 +449,7 @@
             canvas.width = W * DPR; canvas.height = H * DPR;
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
             const small = W < 700;
-            NU = small ? 90 : 120; NV = small ? 28 : 36;
+            NU = small ? 100 : 150; NV = small ? 30 : 44;
             const newN = NU * NV;
             if (newN !== N) {
                 N = newN;
@@ -451,6 +464,7 @@
                 }
             }
             shapes = [null, ringShape('DEBUG'), ringShape('BUILD'), ringShape('SHIP')];
+            placeBug();
         };
 
         // torus point i → screen xy + size (shape 0 is live, it rotates)
@@ -543,7 +557,7 @@
             const from = stg.from, to = stg.to, t = stg.t;
             setCaption(t > 0.5 ? to : from);
             const A = shapes[from], B = shapes[to];
-            const rot = reduceMotion ? 0 : time * 0.32;
+            const rot = reduceMotion ? 0 : time * 0.12;
             const rc = Math.cos(rot), rs = Math.sin(rot), cxN = centerX(), cyN = centerY();
             ctx.clearRect(0, 0, W, H);
             ctx.fillStyle = '#121410';
@@ -554,9 +568,9 @@
                 const ti = ease(Math.min(1, Math.max(0, t * 1.5 - delay[i] * 0.5)));
                 let ax, ay, as, bx, by, bs;
                 if (from === 0) { const q = torus(i); ax = q.x; ay = q.y; as = q.s; }
-                else { const rx = A[i * 2], ry = A[i * 2 + 1]; ax = cxN + rx * rc - ry * rs; ay = cyN + rx * rs + ry * rc; as = 1.25; }
+                else { const rx = A[i * 2], ry = A[i * 2 + 1]; ax = cxN + rx * rc - ry * rs; ay = cyN + rx * rs + ry * rc; as = 1.05; }
                 if (to === 0) { const q = torus(i); bx = q.x; by = q.y; bs = q.s; }
-                else { const rx = B[i * 2], ry = B[i * 2 + 1]; bx = cxN + rx * rc - ry * rs; by = cyN + rx * rs + ry * rc; bs = 1.25; }
+                else { const rx = B[i * 2], ry = B[i * 2 + 1]; bx = cxN + rx * rc - ry * rs; by = cyN + rx * rs + ry * rc; bs = 1.05; }
                 const tx = ax + (bx - ax) * ti, ty = ay + (by - ay) * ti, size = as + (bs - as) * ti;
                 if (reduceMotion) { px[i] = tx; py[i] = ty; }
                 else {
@@ -576,7 +590,6 @@
                 ctx.arc(px[i], py[i], size, 0, 6.283);
             }
             ctx.fill();
-            drawPet();
             requestAnimationFrame(frame);
         };
 
@@ -601,7 +614,8 @@
             const paths = $$('path', inline).map(el => `<path d="${el.getAttribute('d')}" fill="#000"/>`).join('');
             const src = `<svg xmlns="http://www.w3.org/2000/svg" width="1142" height="338" viewBox="225 430 571 169">${paths}</svg>`;
             logoImg = new Image();
-            logoImg.onload = logoImg.onerror = start;
+            const ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+            logoImg.onload = logoImg.onerror = () => ready.then(start);
             logoImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
         } else start();
     }

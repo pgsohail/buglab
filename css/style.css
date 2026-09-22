@@ -327,15 +327,25 @@ details[open] > p { animation: open .45s var(--ease); }
 .logo-red .lp { fill: #E71809; }
 .logo-green { position: absolute; inset: 0; }
 .logo-green .lp { fill: var(--olive); }
-.logo-green { animation: fillwave 7s cubic-bezier(.65, 0, .35, 1) infinite; }
-/* green floods in left→right over the red, holds, then red floods back */
-@keyframes fillwave {
-    0%   { clip-path: inset(-12% 100% -12% 0); }
-    22%  { clip-path: inset(-12% 0 -12% 0); }
-    62%  { clip-path: inset(-12% 0 -12% 0); }
-    84%  { clip-path: inset(-12% 0 -12% 100%); }
-    100% { clip-path: inset(-12% 0 -12% 100%); }
+.logo-green { animation: fillup 6s cubic-bezier(.55, 0, .35, 1) infinite; }
+@keyframes fillup {
+    0%     { clip-path: inset(100% 0 -12% 0); opacity: 1; }
+    32%    { clip-path: inset(-12% 0 -12% 0); opacity: 1; }
+    78%    { clip-path: inset(-12% 0 -12% 0); opacity: 1; }
+    92%    { clip-path: inset(-12% 0 -12% 0); opacity: 0; }
+    92.1%  { clip-path: inset(100% 0 -12% 0); opacity: 0; }
+    100%   { clip-path: inset(100% 0 -12% 0); opacity: 1; }
 }
+/* ladybug in the middle of the particle ring */
+.ring-bug { position: absolute; z-index: 1; transform: translate(-50%, -52%); pointer-events: none; left: 70%; top: 48%; width: 160px; }
+.ring-bug-inner { position: relative; animation: bugbob 3.2s ease-in-out infinite; }
+.ring-bug svg { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 10px 18px rgba(18, 20, 16, .22)); }
+@keyframes bugbob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(3deg); } }
+.ring-bug .rb-eye { position: absolute; width: 17%; height: auto; aspect-ratio: 1; top: 19%; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px #121410; transition: transform .12s; }
+.ring-bug .rb-eye i { width: 46%; height: 46%; }
+.rb-l { left: 41%; }
+.rb-r { left: 59%; }
+.ring-bug.blink .rb-eye { transform: translate(-50%, -50%) scaleY(.12); }
 .intro-tag { margin-top: clamp(18px, 2.4vw, 30px); font-size: clamp(13px, 1.3vw, 18px); font-weight: 500; letter-spacing: .22em; color: var(--ink); min-height: 1.4em; }
 .caret { display: inline-block; width: .6em; height: 1.1em; background: var(--ink); margin-left: 4px; vertical-align: -.2em; animation: caret 1s steps(1) infinite; }
 @keyframes caret { 50% { opacity: 0; } }
@@ -523,6 +533,7 @@ details[open] > p { animation: open .45s var(--ease); }
     .intro-grid { padding-top: 48px; }
     .intro-meta { gap: 14px 28px; }
     .art-label { display: none; }
+    .ring-bug { left: 50%; top: 62%; }
     .header-nav { display: none; }
     .menu-btn { display: block; }
     .hero { padding-top: 64px; }
