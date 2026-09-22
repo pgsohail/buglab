@@ -509,39 +509,56 @@
             return out;
         };
 
+        // ring geometry: an ellipse that wraps around the centred content
+        const ring = { cx: 0, cy: 0, rx: 0, ry: 0 };
+        const LANES = 11;
+        let PER = 0;
+        const measureRing = () => {
+            const c = canvas.getBoundingClientRect();
+            const box = $('.intro-center');
+            const r = box ? box.getBoundingClientRect() : { left: c.left + W * 0.25, top: c.top + H * 0.2, width: W * 0.5, height: H * 0.6 };
+            ring.cx = r.left - c.left + r.width / 2;
+            ring.cy = r.top - c.top + r.height / 2;
+            ring.rx = Math.min(W * 0.48, (r.width / 2) * 1.2 + 50);
+            ring.ry = Math.min(H * 0.48, (r.height / 2) * 1.2 + 30);
+        };
+
         const build = () => {
             const r = canvas.getBoundingClientRect();
             W = r.width; H = r.height;
             DPR = Math.min(2, devicePixelRatio || 1);
             canvas.width = W * DPR; canvas.height = H * DPR;
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-            GAP = W < 700 ? 17 : 19;
-            COLS = Math.ceil(W / GAP) + 2; ROWS = Math.ceil(H / GAP) + 2;
-            N = COLS * ROWS;
+            measureRing();
+            PER = W < 700 ? 200 : 340;
+            N = LANES * PER;
             px = new Float32Array(N); py = new Float32Array(N);
             vx = new Float32Array(N); vy = new Float32Array(N);
             gx = new Float32Array(N); gy = new Float32Array(N); delay = new Float32Array(N);
             for (let i = 0; i < N; i++) {
-                gx[i] = (i % COLS) * GAP - GAP / 2;
-                gy[i] = Math.floor(i / COLS) * GAP - GAP / 2;
-                px[i] = gx[i]; py[i] = gy[i];
+                gx[i] = i % LANES;                                            // lane index
+                gy[i] = (Math.floor(i / LANES) / PER) * Math.PI * 2 + gx[i] * 0.21;  // base angle
+                px[i] = ring.cx; py[i] = ring.cy;
                 delay[i] = Math.random();
             }
             words = { logo: logoShape() };
         };
 
-        // the resting field: a grid that ripples like a slow wave; dot size follows the wave height
+        // the resting state: a thick, slowly rotating ring of dots around the content
         const fp = { x: 0, y: 0, s: 1 };
         const field = (i) => {
-            const x = gx[i], y = gy[i], t = time;
-            const z = Math.sin(x * 0.009 + t * 0.55) * Math.cos(y * 0.011 - t * 0.4) + 0.5 * Math.sin((x + y) * 0.006 + t * 0.3);
-            fp.x = x + Math.sin(y * 0.018 + t * 0.6) * 7;
-            fp.y = y + z * 9;
-            fp.s = 0.55 + (z + 1.5) * 0.55;
+            const lane = gx[i], t = time;
+            const u = lane / (LANES - 1) - 0.5;                 // -0.5 … 0.5 across the band
+            const dir = lane % 2 ? 1 : -1;
+            const ang = gy[i] + t * (0.05 + Math.abs(u) * 0.06) * dir;
+            const wave = Math.sin(ang * 6 + t * 0.9 + lane) * 0.035 + Math.sin(ang * 3 - t * 0.5) * 0.025;
+            const k = 1 + u * 0.32 + wave;
+            fp.x = ring.cx + Math.cos(ang) * ring.rx * k;
+            fp.y = ring.cy + Math.sin(ang) * ring.ry * k;
+            fp.s = 0.6 + (1 - Math.abs(u) * 1.6) * 0.9 + Math.sin(ang * 4 + t) * 0.25;
             return fp;
         };
 
-        // timeline: field → DEBUG → field → BUILD → field → SHIP → (loop)
         // timeline: field → dots gather into the logo (solid logo dissolves) → back to field
         const seq = ['field', 'logo'];
         const HOLD = { field: 6, word: 4.5 }, MORPH = 2.8;
