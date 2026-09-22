@@ -124,6 +124,56 @@
         }
     }
 
+    /* ── Logo: letters change colour one by one, new effect + palette every round ── */
+    const logoLayers = $$('.lgw');
+    if (logoLayers.length) {
+        const palettes = [
+            ['#3F550A', '#3F550A', '#3F550A', '#3F550A', '#3F550A', '#3F550A', '#3F550A'],          // brand green
+            ['#2F4A06', '#3F5F0B', '#4F7410', '#608A15', '#719F1A', '#82B41F', '#93C924'],          // green gradient
+            ['#3F550A', '#1F6FEB', '#F2A900', '#7B2CBF', '#0E9F6E', '#E0457B', '#121410'],          // multicolour
+            ['#121410', '#121410', '#121410', '#121410', '#121410', '#121410', '#121410'],          // ink
+            ['#0E9F6E', '#128C68', '#167962', '#1A665C', '#1E5356', '#224050', '#3F550A']           // teal → green
+        ];
+        const bounds = logoLayers.map(w => ({ l: parseFloat(w.dataset.l), r: parseFloat(w.dataset.r) }));
+        const full = 'inset(-15% -15% -15% -15%)';
+        const effects = [
+            // bottom-up fill
+            (b) => [{ clipPath: 'inset(100% -15% -15% -15%)' }, { clipPath: full }],
+            // top-down pour
+            (b) => [{ clipPath: 'inset(-15% -15% 100% -15%)' }, { clipPath: full }],
+            // left-to-right sweep inside each letter
+            (b) => [{ clipPath: `inset(-15% ${100 - b.l}% -15% ${b.l}%)` }, { clipPath: `inset(-15% ${b.r}% -15% ${b.l}%)` }],
+            // circle bloom from the letter centre
+            (b) => { const cx = (b.l + (100 - b.r)) / 2; return [{ clipPath: `circle(0% at ${cx}% 55%)` }, { clipPath: `circle(80% at ${cx}% 55%)` }]; },
+            // soft blur fade-in
+            () => [{ clipPath: full, opacity: 0, filter: 'blur(8px)' }, { clipPath: full, opacity: 1, filter: 'blur(0px)' }]
+        ];
+        const svgs = logoLayers.map(w => w.firstElementChild);
+        if (reduceMotion) {
+            svgs.forEach(s => { s.style.setProperty('--fill', '#3F550A'); s.style.clipPath = full; });
+        } else {
+            let round = 0;
+            const FILL = 1700, STAGGER = 520, HOLD = 4200;
+            const cycle = () => {
+                const pal = palettes[round % palettes.length];
+                const fx = effects[round % effects.length];
+                round++;
+                const anims = svgs.map((s, i) => {
+                    s.style.setProperty('--fill', pal[i]);
+                    const k = fx(bounds[i]);
+                    return s.animate(k, { duration: FILL, delay: i * STAGGER, easing: 'cubic-bezier(.55,0,.35,1)', fill: 'both' });
+                });
+                const filled = FILL + STAGGER * (svgs.length - 1);
+                setTimeout(() => {
+                    // un-fill in the same order by playing each animation backwards
+                    anims.forEach((a, i) => setTimeout(() => { a.playbackRate = -1; a.play(); }, i * STAGGER * 0.8));
+                    setTimeout(cycle, FILL + STAGGER * 0.8 * svgs.length + 900);
+                }, filled + HOLD);
+            };
+            cycle();
+        }
+    }
+
     /* ── Ring ladybug: blink now and then ─────────────── */
     const rb = $('#ringBug');
     if (rb && !reduceMotion) {
@@ -482,13 +532,15 @@
 
         const ringBug = $('#ringBug');
         // ladybug "b" from the logo (x 225–352 of the 571-wide viewBox), drawn in dots in the ring centre
-        const bugH = () => ringR() * 0.72;
-        const bugW = () => bugH() * (113 / 169);
+        const bugH = () => ringR() * 0.6;
+        const bugW = () => bugH() * (121 / 134);
+        const bugImg = new Image();
+        bugImg.src = 'data:image/png;base64,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';
         let M = 0, qx, qy, qvx, qvy, bugPts = null;
         const bugShape = () => sample((o) => {
-            if (!logoImg || !logoImg.naturalWidth) return;
+            if (!bugImg.naturalWidth) return;
             const h = bugH(), w = bugW();
-            o.drawImage(logoImg, 0, 0, 226, 338, centerX() - w / 2, centerY() - h / 2, w, h);
+            o.drawImage(bugImg, centerX() - w / 2, centerY() - h / 2, w, h);
         }, M);
         const placeBug = () => {
             if (!ringBug) return;
@@ -540,7 +592,7 @@
             let y = (Rr + rr * Math.cos(v)) * Math.sin(u);
             let z = rr * Math.sin(v);
             // spin around own axis
-            const a = time * 0.18;
+            const a = time * 0.1;
             const ca = Math.cos(a), sa = Math.sin(a);
             let x1 = x * ca - y * sa, y1 = x * sa + y * ca;
             // tilt (x-axis) + mouse sway (y-axis)
@@ -562,7 +614,7 @@
 
         const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
         // timeline: hold torus, then each word, looping back to the torus
-        const HOLD = [4.2, 2.6, 2.6, 2.6], MORPH = 1.6;
+        const HOLD = [6, 4.5, 4.5, 4.5], MORPH = 2.6;
         const CYCLE = HOLD.reduce((a, b) => a + b, 0) + MORPH * 4;
         const stageAt = (tm) => {
             let x = tm % CYCLE;
@@ -619,7 +671,7 @@
             const from = stg.from, to = stg.to, t = stg.t;
             setCaption(t > 0.5 ? to : from);
             const A = shapes[from], B = shapes[to];
-            const rot = reduceMotion ? 0 : time * 0.12;
+            const rot = reduceMotion ? 0 : time * 0.07;
             const rc = Math.cos(rot), rs = Math.sin(rot), cxN = centerX(), cyN = centerY();
             ctx.clearRect(0, 0, W, H);
             ctx.fillStyle = '#121410';
@@ -651,8 +703,11 @@
                 ctx.moveTo(px[i] + size, py[i]);
                 ctx.arc(px[i], py[i], size, 0, 6.283);
             }
-            // dotted ladybug in the middle, gently bobbing
-            const bob = reduceMotion ? 0 : Math.sin(time * 1.8) * 5;
+            ctx.fill();
+            // dotted ladybug (red) in the middle, gently bobbing
+            ctx.fillStyle = '#E71809';
+            ctx.beginPath();
+            const bob = reduceMotion ? 0 : Math.sin(time * 1.1) * 5;
             if (ringBug) ringBug.style.transform = `translate(-50%, calc(-50% + ${bob}px))`;
             for (let i = 0; bugPts && i < M; i++) {
                 const tx = bugPts[i * 2], ty = bugPts[i * 2 + 1] + bob;
@@ -697,7 +752,8 @@
             const src = `<svg xmlns="http://www.w3.org/2000/svg" width="1142" height="338" viewBox="225 430 571 169">${paths}</svg>`;
             logoImg = new Image();
             const ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
-            logoImg.onload = logoImg.onerror = () => ready.then(start);
+            const bugReady = bugImg.complete ? Promise.resolve() : new Promise(res => { bugImg.onload = bugImg.onerror = res; });
+            logoImg.onload = logoImg.onerror = () => Promise.all([ready, bugReady]).then(start);
             logoImg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(src);
         } else start();
     }
