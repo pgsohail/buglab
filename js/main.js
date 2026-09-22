@@ -245,17 +245,56 @@
         const runner = Runner.create();
         Runner.run(runner, engine);
 
-        // flash tags when they collide hard
+        // sparks canvas
+        const sc = $('#pitSparks');
+        const sctx = sc ? sc.getContext('2d') : null;
+        const sparks = [];
+        const sizeSparks = () => { if (!sc) return; const d = Math.min(2, devicePixelRatio || 1); sc.width = W * d; sc.height = H * d; sctx.setTransform(d, 0, 0, d, 0, 0); };
+        sizeSparks();
+        const burst = (x, y, n, power) => {
+            for (let k = 0; k < n; k++) {
+                const a = Math.random() * Math.PI * 2, v = (0.5 + Math.random()) * power;
+                sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - power * 0.4, life: 1 });
+            }
+        };
+        const drawSparks = () => {
+            if (!sctx) return;
+            sctx.clearRect(0, 0, W, H);
+            for (let k = sparks.length - 1; k >= 0; k--) {
+                const s = sparks[k];
+                s.x += s.vx; s.y += s.vy; s.vy += 0.12; s.vx *= 0.97; s.life -= 0.025;
+                if (s.life <= 0) { sparks.splice(k, 1); continue; }
+                sctx.fillStyle = `rgba(200, 242, 90, ${s.life})`;
+                sctx.beginPath(); sctx.arc(s.x, s.y, 1.2 + s.life * 1.6, 0, 6.283); sctx.fill();
+            }
+        };
+        // flash + spark when tags collide hard
         Events.on(engine, 'collisionStart', ev => {
-            ev.pairs.forEach(p => [p.bodyA, p.bodyB].forEach(b => {
-                if (!b.el || b.speed < 2.5) return;
-                b.el.classList.add('hit');
-                clearTimeout(b.hitT);
-                b.hitT = setTimeout(() => b.el.classList.remove('hit'), 220);
-            }));
+            ev.pairs.forEach(p => {
+                const sp = Math.max(p.bodyA.speed || 0, p.bodyB.speed || 0);
+                if (sp < 2.5) return;
+                const pt = p.collision && p.collision.supports && p.collision.supports[0];
+                if (pt) burst(pt.x, pt.y, Math.min(14, 4 + sp * 1.5), Math.min(4, 1 + sp * 0.35));
+                [p.bodyA, p.bodyB].forEach(b => {
+                    if (!b.el) return;
+                    b.el.classList.add('hit');
+                    clearTimeout(b.hitT);
+                    b.hitT = setTimeout(() => b.el.classList.remove('hit'), 220);
+                });
+            });
         });
+        Events.on(engine, 'afterUpdate', drawSparks);
+        // cursor spotlight
+        pit.addEventListener('pointermove', e => {
+            const r = pit.getBoundingClientRect();
+            pit.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+            pit.style.setProperty('--my', (e.clientY - r.top) + 'px');
+        }, { passive: true });
         // every few seconds a random tag hops, so the pit never sits still
         const statusEl = $('#pitStatus');
+        const logEl = $('#pitLog');
+        const logLines = ['> npm run test ✓', '> slither ./contracts ✓', '> airflow dags trigger etl', '> deploy --prod', '> pytest -q  42 passed', '> hardhat compile ✓', '> agent.run() → done', '> git push origin main'];
+        let li = 0;
         const found = ['bug found in Solidity', 'patched: data pipeline', 'LLM agent online', 'tests passing', 'deploying to AWS', 'scanning stack…'];
         let si = 0;
         setInterval(() => {
@@ -264,6 +303,13 @@
             Body.setVelocity(b, { x: (Math.random() - 0.5) * 10, y: -10 - Math.random() * 6 });
             Body.setAngularVelocity(b, (Math.random() - 0.5) * 0.35);
             if (statusEl) { si = (si + 1) % found.length; statusEl.textContent = found[si]; }
+            if (logEl) {
+                const item = document.createElement('li');
+                item.textContent = logLines[li++ % logLines.length];
+                logEl.appendChild(item);
+                while (logEl.children.length > 4) logEl.firstElementChild.remove();
+            }
+            burst(b.position.x, b.position.y + b.h / 2, 10, 2.4);
         }, 2600);
 
         Events.on(engine, 'afterUpdate', () => {
@@ -284,7 +330,7 @@
         let rt;
         addEventListener('resize', () => {
             clearTimeout(rt);
-            rt = setTimeout(() => { W = pit.clientWidth; H = pit.clientHeight; buildWalls(); }, 150);
+            rt = setTimeout(() => { W = pit.clientWidth; H = pit.clientHeight; buildWalls(); sizeSparks(); }, 150);
         });
     };
 
@@ -353,7 +399,7 @@
         const pet = { x: 0, y: 0, rot: 0, init: false };
         let logoImg = null;
 
-        const sample = (draw) => {
+        const sample = (draw, cnt = N) => {
             const off = document.createElement('canvas');
             off.width = Math.max(1, Math.floor(W)); off.height = Math.max(1, Math.floor(H));
             const o = off.getContext('2d');
@@ -367,12 +413,12 @@
                 }
             }
             const count = pts.length / 2;
-            const out = new Float32Array(N * 2);
+            const out = new Float32Array(cnt * 2);
             if (!count) return out;
             // shuffle order so particles spread evenly over the glyphs
             const idx = Array.from({ length: count }, (_, i) => i);
             for (let i = count - 1; i > 0; i--) { const j = (Math.random() * (i + 1)) | 0; [idx[i], idx[j]] = [idx[j], idx[i]]; }
-            for (let i = 0; i < N; i++) {
+            for (let i = 0; i < cnt; i++) {
                 const k = idx[i % count];
                 out[i * 2] = pts[k * 2] + (Math.random() - 0.5) * step * 0.8;
                 out[i * 2 + 1] = pts[k * 2 + 1] + (Math.random() - 0.5) * step * 0.8;
@@ -435,12 +481,21 @@
         };
 
         const ringBug = $('#ringBug');
+        // ladybug "b" from the logo (x 225–352 of the 571-wide viewBox), drawn in dots in the ring centre
+        const bugH = () => ringR() * 0.72;
+        const bugW = () => bugH() * (113 / 169);
+        let M = 0, qx, qy, qvx, qvy, bugPts = null;
+        const bugShape = () => sample((o) => {
+            if (!logoImg || !logoImg.naturalWidth) return;
+            const h = bugH(), w = bugW();
+            o.drawImage(logoImg, 0, 0, 226, 338, centerX() - w / 2, centerY() - h / 2, w, h);
+        }, M);
         const placeBug = () => {
             if (!ringBug) return;
-            const r = ringR();
             ringBug.style.left = centerX() + 'px';
             ringBug.style.top = centerY() + 'px';
-            ringBug.style.width = (r * 0.95) + 'px';
+            ringBug.style.width = bugW() + 'px';
+            ringBug.style.height = bugH() + 'px';
         };
         const build = () => {
             const r = canvas.getBoundingClientRect();
@@ -464,6 +519,13 @@
                 }
             }
             shapes = [null, ringShape('DEBUG'), ringShape('BUILD'), ringShape('SHIP')];
+            const newM = small ? 900 : 1600;
+            if (newM !== M) {
+                M = newM;
+                qx = new Float32Array(M); qy = new Float32Array(M); qvx = new Float32Array(M); qvy = new Float32Array(M);
+                for (let i = 0; i < M; i++) { qx[i] = W / 2; qy[i] = H / 2; }
+            }
+            bugPts = bugShape();
             placeBug();
         };
 
@@ -588,6 +650,26 @@
                 }
                 ctx.moveTo(px[i] + size, py[i]);
                 ctx.arc(px[i], py[i], size, 0, 6.283);
+            }
+            // dotted ladybug in the middle, gently bobbing
+            const bob = reduceMotion ? 0 : Math.sin(time * 1.8) * 5;
+            if (ringBug) ringBug.style.transform = `translate(-50%, calc(-50% + ${bob}px))`;
+            for (let i = 0; bugPts && i < M; i++) {
+                const tx = bugPts[i * 2], ty = bugPts[i * 2 + 1] + bob;
+                if (reduceMotion) { qx[i] = tx; qy[i] = ty; }
+                else {
+                    qvx[i] += (tx - qx[i]) * 0.09; qvy[i] += (ty - qy[i]) * 0.09;
+                    if (mouse.active) {
+                        const dx = qx[i] - mouse.x, dy = qy[i] - mouse.y, d2 = dx * dx + dy * dy;
+                        if (d2 < rep2 && d2 > 0.01) {
+                            const d = Math.sqrt(d2), f = (1 - d / rep) * 2.5;
+                            qvx[i] += (dx / d) * f; qvy[i] += (dy / d) * f;
+                        }
+                    }
+                    qvx[i] *= 0.78; qvy[i] *= 0.78; qx[i] += qvx[i]; qy[i] += qvy[i];
+                }
+                ctx.moveTo(qx[i] + 1.05, qy[i]);
+                ctx.arc(qx[i], qy[i], 1.05, 0, 6.283);
             }
             ctx.fill();
             requestAnimationFrame(frame);

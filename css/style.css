@@ -327,25 +327,25 @@ details[open] > p { animation: open .45s var(--ease); }
 .logo-red .lp { fill: #E71809; }
 .logo-green { position: absolute; inset: 0; }
 .logo-green .lp { fill: var(--olive); }
-.logo-green { animation: fillup 6s cubic-bezier(.55, 0, .35, 1) infinite; }
-@keyframes fillup {
-    0%     { clip-path: inset(100% 0 -12% 0); opacity: 1; }
-    32%    { clip-path: inset(-12% 0 -12% 0); opacity: 1; }
-    78%    { clip-path: inset(-12% 0 -12% 0); opacity: 1; }
-    92%    { clip-path: inset(-12% 0 -12% 0); opacity: 0; }
-    92.1%  { clip-path: inset(100% 0 -12% 0); opacity: 0; }
-    100%   { clip-path: inset(100% 0 -12% 0); opacity: 1; }
-}
-/* ladybug in the middle of the particle ring */
-.ring-bug { position: absolute; z-index: 1; transform: translate(-50%, -52%); pointer-events: none; left: 70%; top: 48%; width: 160px; }
-.ring-bug-inner { position: relative; animation: bugbob 3.2s ease-in-out infinite; }
-.ring-bug svg { width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 10px 18px rgba(18, 20, 16, .22)); }
-@keyframes bugbob { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-6px) rotate(3deg); } }
-.ring-bug .rb-eye { position: absolute; width: 17%; height: auto; aspect-ratio: 1; top: 19%; transform: translate(-50%, -50%); box-shadow: 0 0 0 2px #121410; transition: transform .12s; }
-.ring-bug .rb-eye i { width: 46%; height: 46%; }
-.rb-l { left: 41%; }
-.rb-r { left: 59%; }
+/* googly eyes laid over the dotted ladybug's face */
+.ring-bug { position: absolute; z-index: 1; pointer-events: none; left: 70%; top: 48%; transform: translate(-50%, -50%); }
+.ring-bug .rb-eye { position: absolute; width: 15%; height: auto; aspect-ratio: 1; transform: translate(-50%, -50%); box-shadow: 0 0 0 1.5px #121410; transition: transform .12s; }
+.ring-bug .rb-eye i { width: 48%; height: 48%; }
+.rb-l { left: 59.6%; top: 26.2%; }
+.rb-r { left: 78.3%; top: 35%; }
 .ring-bug.blink .rb-eye { transform: translate(-50%, -50%) scaleY(.12); }
+
+/* logo: letters fill red → green one by one, bottom-up */
+.logo-green .lp { fill: var(--olive); }
+.lg { animation: fillL 8s cubic-bezier(.55, 0, .35, 1) infinite both; animation-delay: calc(var(--i) * .32s); }
+@keyframes fillL {
+    0%     { clip-path: inset(100% var(--r) -12% var(--l)); opacity: 1; }
+    8%     { clip-path: inset(-12% var(--r) -12% var(--l)); opacity: 1; }
+    72%    { clip-path: inset(-12% var(--r) -12% var(--l)); opacity: 1; }
+    80%    { clip-path: inset(-12% var(--r) -12% var(--l)); opacity: 0; }
+    80.1%  { clip-path: inset(100% var(--r) -12% var(--l)); opacity: 0; }
+    100%   { clip-path: inset(100% var(--r) -12% var(--l)); opacity: 1; }
+}
 .intro-tag { margin-top: clamp(18px, 2.4vw, 30px); font-size: clamp(13px, 1.3vw, 18px); font-weight: 500; letter-spacing: .22em; color: var(--ink); min-height: 1.4em; }
 .caret { display: inline-block; width: .6em; height: 1.1em; background: var(--ink); margin-left: 4px; vertical-align: -.2em; animation: caret 1s steps(1) infinite; }
 @keyframes caret { 50% { opacity: 0; } }
@@ -377,9 +377,52 @@ details[open] > p { animation: open .45s var(--ease); }
 .pit-tags li.t-accent { background: var(--accent); }
 .pit-tags li.t-outline { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
 .pit-tags li { transition: box-shadow .25s, filter .25s; }
-.pit-tags li:hover { box-shadow: 0 0 0 3px rgba(200, 242, 90, .55), 0 0 28px rgba(200, 242, 90, .45); }
+.pit-tags li:hover { box-shadow: 0 0 0 3px rgba(200, 242, 90, .55), 0 0 28px rgba(200, 242, 90, .45) !important; }
 .pit-tags li.hit { box-shadow: 0 0 0 2px var(--accent), 0 0 24px rgba(200, 242, 90, .7); filter: brightness(1.12); }
 /* toolkit extras */
+@property --spin { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.pit-frame {
+    position: relative; padding: 2px; border-radius: calc(var(--radius) + 2px);
+    background: conic-gradient(from var(--spin), rgba(200, 242, 90, .05), var(--accent) 12%, rgba(200, 242, 90, .05) 28%, rgba(200, 242, 90, .05) 55%, #7fa61c 68%, rgba(200, 242, 90, .05) 82%);
+    animation: spin 6s linear infinite;
+    box-shadow: 0 30px 80px -30px rgba(18, 20, 16, .55), 0 0 60px -20px rgba(200, 242, 90, .35);
+}
+@keyframes spin { to { --spin: 360deg; } }
+.pit::before { /* cursor spotlight */
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+    background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 40%), rgba(200, 242, 90, .13), transparent 60%);
+    transition: background .1s;
+}
+.pit::after { /* vignette */
+    content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+    box-shadow: inset 0 0 120px rgba(0, 0, 0, .65);
+}
+.pit-bar {
+    position: absolute; inset: 0 0 auto 0; height: 42px; z-index: 3; display: flex; align-items: center; gap: 16px;
+    padding: 0 18px; border-bottom: 1px solid rgba(200, 242, 90, .12);
+    background: linear-gradient(rgba(255, 255, 255, .04), transparent); pointer-events: none;
+}
+.tl { display: flex; gap: 6px; }
+.tl i { width: 10px; height: 10px; border-radius: 50%; background: #3a3f33; }
+.tl i:nth-child(1) { background: #E71809; } .tl i:nth-child(2) { background: #e0b43a; } .tl i:nth-child(3) { background: var(--accent); }
+.pit-path { color: rgba(228, 237, 200, .55); }
+.pit-live { margin-left: auto; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+.pit-log {
+    position: absolute; left: 20px; top: 58px; z-index: 2; pointer-events: none; list-style: none;
+    display: flex; flex-direction: column; gap: 5px; font-size: 11px; color: rgba(200, 242, 90, .8);
+}
+.pit-log li { animation: logIn .4s var(--ease) both; }
+.pit-log li:nth-last-child(2) { opacity: .6; } .pit-log li:nth-last-child(3) { opacity: .35; } .pit-log li:nth-last-child(4) { opacity: .15; }
+@keyframes logIn { from { opacity: 0; transform: translateX(-8px); } }
+.pit-sparks { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
+.pit-glow { /* floor glow */
+    position: absolute; left: 0; right: 0; bottom: 0; height: 90px; pointer-events: none;
+    background: linear-gradient(transparent, rgba(200, 242, 90, .12)); border-bottom: 2px solid rgba(200, 242, 90, .45);
+    animation: floor 3s ease-in-out infinite;
+}
+@keyframes floor { 50% { opacity: .45; } }
+.pit-tags { z-index: 3; }
+.pit-tags li { box-shadow: 0 8px 18px -8px rgba(0, 0, 0, .6); }
 .pit-grid {
     position: absolute; inset: -40px; pointer-events: none;
     background-image: radial-gradient(rgba(200, 242, 90, .16) 1.2px, transparent 1.4px);
@@ -392,7 +435,7 @@ details[open] > p { animation: open .45s var(--ease); }
     animation: scan 5.5s cubic-bezier(.45, 0, .55, 1) infinite;
 }
 @keyframes scan { 0% { left: -25%; } 60%, 100% { left: 105%; } }
-.pit-bug { position: absolute; top: 18px; left: 0; pointer-events: none; animation: crawl 16s linear infinite; }
+.pit-bug { position: absolute; top: 12px; z-index: 4; margin-left: 180px; left: 0; pointer-events: none; animation: crawl 16s linear infinite; }
 .pit-bug span {
     display: inline-block; font: 700 18px/1 var(--mono); color: var(--accent);
     animation: bobble .45s ease-in-out infinite alternate;
@@ -401,7 +444,7 @@ details[open] > p { animation: open .45s var(--ease); }
 @keyframes crawl { from { transform: translateX(-60px); } to { transform: translateX(calc(100vw)); } }
 @keyframes bobble { from { transform: translateY(0) rotate(-6deg); } to { transform: translateY(-3px) rotate(6deg); } }
 .pit-status {
-    position: absolute; right: 20px; top: 18px; color: rgba(228, 237, 200, .6); display: flex; align-items: center; gap: 8px;
+    display: none;
 }
 .blip { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: blip 1.2s ease-in-out infinite; }
 @keyframes blip { 50% { opacity: .25; } }
@@ -555,7 +598,7 @@ details[open] > p { animation: open .45s var(--ease); }
     .case-stat { display: flex; align-items: baseline; gap: 10px; }
 }
 @media (max-width: 520px) {
-    .pit-status { display: none; }
+    .pit-path, .pit-bug { display: none; }
     .story-hint { display: none; }
     .steps { grid-template-columns: 1fr; }
     .step { min-height: 0; }
@@ -572,5 +615,5 @@ details[open] > p { animation: open .45s var(--ease); }
     html { scroll-behavior: auto; }
     .js .reveal { opacity: 1; transform: none; filter: none; }
     .scribble path { stroke-dashoffset: 0; }
-    .logo-green { animation: none; }
+    .lg { animation: none; clip-path: none !important; }
 }
