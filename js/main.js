@@ -18,24 +18,11 @@
     const onScroll = () => {
         const max = document.documentElement.scrollHeight - innerHeight;
         progress.style.transform = `scaleX(${max > 0 ? scrollY / max : 0})`;
-        header.classList.toggle('scrolled', scrollY > 20);
+        if (header) header.classList.toggle('scrolled', scrollY > 20);
         ticking = false;
     };
     addEventListener('scroll', () => { if (!ticking) { requestAnimationFrame(onScroll); ticking = true; } }, { passive: true });
     onScroll();
-
-    /* ── Mobile menu ──────────────────────────────────── */
-    const menuBtn = $('#menuBtn');
-    const menu = $('#menu');
-    const setMenu = (open) => {
-        menuBtn.setAttribute('aria-expanded', String(open));
-        menuBtn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-        menu.hidden = !open;
-        document.body.style.overflow = open ? 'hidden' : '';
-    };
-    menuBtn.addEventListener('click', () => setMenu(menu.hidden));
-    $$('a', menu).forEach(a => a.addEventListener('click', () => setMenu(false)));
-    addEventListener('keydown', e => { if (e.key === 'Escape' && !menu.hidden) setMenu(false); });
 
     /* ── Reveal on scroll ─────────────────────────────── */
     const revealEls = $$('.reveal');
@@ -321,19 +308,13 @@
         setTimeout(loop, 3200);
     }
 
-    /* ── Particle story: torus → DEBUG → BUILD → logo ─── */
+    /* ── Intro particles: torus → DEBUG → BUILD → SHIP (auto loop) ── */
     const canvas = $('#particles');
-    const story = $('#story');
+    const story = $('.intro-art');
     if (canvas && story) {
         const ctx = canvas.getContext('2d');
-        const stepEl = $('#storyStep');
-        const lineEl = $('#storyLine');
-        const captions = [
-            'Every product starts as a loop of ideas.',
-            'We debug what is broken.',
-            'We build what is missing.',
-            'That is bugslab.'
-        ];
+        const labelEl = $('#artLabel');
+        const captions = ['01 · Ideas', '02 · Debug', '03 · Build', '04 · Ship'];
         let W = 0, H = 0, DPR = 1, N = 0, NU = 0, NV = 0;
         let px, py, vx, vy, pu, pv, delay, shapes = [];
         let running = false, time = 0, lastStage = -1;
@@ -369,12 +350,12 @@
         };
 
         const wordShape = (word) => sample((o, w, h) => {
-            let fs = Math.min(h * 0.36, w * 0.3);
+            let fs = Math.min(h * 0.3, w * 0.3);
             o.font = `700 ${fs}px Georgia, "Times New Roman", serif`;
             const m = o.measureText(word).width;
-            if (m > w * 0.8) { fs *= (w * 0.8) / m; o.font = `700 ${fs}px Georgia, "Times New Roman", serif`; }
+            if (m > w * 0.88) { fs *= (w * 0.88) / m; o.font = `700 ${fs}px Georgia, "Times New Roman", serif`; }
             o.textAlign = 'center'; o.textBaseline = 'middle';
-            o.fillText(word, w / 2, h * 0.46);
+            o.fillText(word, w / 2, h * 0.5);
         });
 
         const logoShape = () => {
@@ -393,7 +374,7 @@
             canvas.width = W * DPR; canvas.height = H * DPR;
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
             const small = W < 700;
-            NU = small ? 90 : 130; NV = small ? 28 : 38;
+            NU = small ? 90 : 120; NV = small ? 28 : 36;
             const newN = NU * NV;
             if (newN !== N) {
                 N = newN;
@@ -407,13 +388,13 @@
                     px[i] = W / 2; py[i] = H / 2;
                 }
             }
-            shapes = [null, wordShape('DEBUG'), wordShape('BUILD'), logoShape()];
+            shapes = [null, wordShape('DEBUG'), wordShape('BUILD'), wordShape('SHIP')];
         };
 
         // torus point i → screen xy + size (shape 0 is live, it rotates)
         const tor = { x: 0, y: 0, s: 1 };
         const torus = (i) => {
-            const R = Math.min(W, H) * (W < 700 ? 0.27 : 0.3);
+            const R = Math.min(W, H) * 0.27;
             const u = pu[i], v = pv[i];
             const Rr = R * (1 + 0.05 * Math.sin(3 * u + time * 0.9));
             const rr = R * 0.46 * (1 + 0.12 * Math.sin(2 * v + 4 * u + time * 1.3));
@@ -436,37 +417,35 @@
             const cam = R * 4;
             const f = cam / (cam - z3);
             tor.x = W / 2 + x3 * f;
-            tor.y = H * 0.46 + y2 * f;
+            tor.y = H * 0.5 + y2 * f;
             tor.s = Math.max(0.35, 0.5 + ((z3 / (R * 1.5)) + 0.5) * 1.5);
             return tor;
         };
 
         const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-        const keys = [0, 0.16, 0.3, 0.44, 0.58, 0.72, 0.86, 1];
-        const vals = [0, 0, 1, 1, 2, 2, 3, 3];
-        const stageAt = (p) => {
-            for (let k = 0; k < keys.length - 1; k++) {
-                if (p <= keys[k + 1]) {
-                    const t = (p - keys[k]) / (keys[k + 1] - keys[k]);
-                    return vals[k] + (vals[k + 1] - vals[k]) * t;
-                }
+        // timeline: hold torus, then each word, looping back to the torus
+        const HOLD = [4.2, 2.6, 2.6, 2.6], MORPH = 1.6;
+        const CYCLE = HOLD.reduce((a, b) => a + b, 0) + MORPH * 4;
+        const stageAt = (tm) => {
+            let x = tm % CYCLE;
+            for (let k = 0; k < 4; k++) {
+                if (x < HOLD[k]) return { from: k, to: k, t: 0 };
+                x -= HOLD[k];
+                if (x < MORPH) return { from: k, to: (k + 1) % 4, t: x / MORPH };
+                x -= MORPH;
             }
-            return 3;
+            return { from: 0, to: 0, t: 0 };
         };
-
-        const setCaption = (st) => {
-            const k = Math.min(3, Math.round(st));
-            if (k === lastStage) return;
+        const setCaption = (k) => {
+            if (k === lastStage || !labelEl) return;
             lastStage = k;
-            stepEl.textContent = `0${k + 1} / 04`;
-            lineEl.classList.add('swap');
-            setTimeout(() => { lineEl.textContent = captions[k]; lineEl.classList.remove('swap'); }, 220);
+            labelEl.textContent = captions[k];
         };
 
         const drawPet = () => {
             // little swirl-armed bug that drifts after the cursor
-            const tx = mouse.active ? mouse.x + 60 : W * 0.62 + Math.cos(time * 0.6) * 40;
-            const ty = mouse.active ? mouse.y - 60 : H * 0.2 + Math.sin(time * 0.8) * 20;
+            const tx = mouse.active ? mouse.x + 60 : W * 0.78 + Math.cos(time * 0.6) * 30;
+            const ty = mouse.active ? mouse.y - 60 : H * 0.14 + Math.sin(time * 0.8) * 16;
             if (!pet.init) { pet.x = tx; pet.y = ty; pet.init = true; }
             const dx = tx - pet.x, dy = ty - pet.y;
             pet.x += dx * 0.05; pet.y += dy * 0.05;
@@ -497,25 +476,23 @@
 
         const frame = () => {
             if (!running) return;
-            time += reduceMotion ? 0 : 1 / 60;
-            const r = story.getBoundingClientRect();
-            const p = Math.min(1, Math.max(0, -r.top / (r.height - innerHeight)));
-            const st = stageAt(p);
-            setCaption(st);
-            const from = Math.min(2, Math.floor(st));
-            const t = st - from;
-            const A = shapes[from], B = shapes[from + 1];
+            time += 1 / 60;
+            const stg = reduceMotion ? { from: 0, to: 0, t: 0 } : stageAt(time);
+            const from = stg.from, to = stg.to, t = stg.t;
+            setCaption(t > 0.5 ? to : from);
+            const A = shapes[from], B = shapes[to];
             ctx.clearRect(0, 0, W, H);
             ctx.fillStyle = '#121410';
             ctx.beginPath();
-            const rep = W < 700 ? 60 : 110, rep2 = rep * rep;
+            const rep = W < 700 ? 60 : 100, rep2 = rep * rep;
             for (let i = 0; i < N; i++) {
                 // staggered morph per particle
                 const ti = ease(Math.min(1, Math.max(0, t * 1.5 - delay[i] * 0.5)));
                 let ax, ay, as, bx, by, bs;
                 if (from === 0) { const q = torus(i); ax = q.x; ay = q.y; as = q.s; }
                 else { ax = A[i * 2]; ay = A[i * 2 + 1]; as = 1.25; }
-                bx = B[i * 2]; by = B[i * 2 + 1]; bs = 1.25;
+                if (to === 0) { const q = torus(i); bx = q.x; by = q.y; bs = q.s; }
+                else { bx = B[i * 2]; by = B[i * 2 + 1]; bs = 1.25; }
                 const tx = ax + (bx - ax) * ti, ty = ay + (by - ay) * ti, size = as + (bs - as) * ti;
                 if (reduceMotion) { px[i] = tx; py[i] = ty; }
                 else {
@@ -539,11 +516,11 @@
             requestAnimationFrame(frame);
         };
 
-        canvas.parentElement.addEventListener('pointermove', e => {
+        ($('.intro') || canvas.parentElement).addEventListener('pointermove', e => {
             const r = canvas.getBoundingClientRect();
             mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.active = true;
         }, { passive: true });
-        canvas.parentElement.addEventListener('pointerleave', () => { mouse.active = false; mouse.x = mouse.y = -9999; });
+        ($('.intro') || canvas.parentElement).addEventListener('pointerleave', () => { mouse.active = false; mouse.x = mouse.y = -9999; });
 
         const start = () => {
             build();
