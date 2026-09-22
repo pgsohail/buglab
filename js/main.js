@@ -509,18 +509,34 @@
             return out;
         };
 
-        // ring geometry: an ellipse that wraps around the centred content
-        const ring = { cx: 0, cy: 0, rx: 0, ry: 0 };
-        const LANES = 11;
-        let PER = 0;
+        // tiny bug sprites (ink / red ladybug / olive), drawn once and stamped for every particle
+        const makeBug = (body, spots) => {
+            const c = document.createElement('canvas'); c.width = c.height = 40;
+            const g = c.getContext('2d');
+            g.translate(20, 21);
+            g.strokeStyle = '#121410'; g.lineWidth = 1.6; g.lineCap = 'round';
+            for (const s of [-1, 1]) for (const yy of [-4, 2, 8]) {           // legs
+                g.beginPath(); g.moveTo(s * 6, yy); g.lineTo(s * 12, yy - 3 + (yy > 0 ? 4 : 0)); g.stroke();
+            }
+            g.beginPath(); g.moveTo(-2, -12); g.lineTo(-6, -18); g.moveTo(2, -12); g.lineTo(6, -18); g.stroke(); // antennae
+            g.fillStyle = '#121410'; g.beginPath(); g.arc(0, -10, 4.6, 0, 7); g.fill();                       // head
+            g.fillStyle = body; g.beginPath(); g.ellipse(0, 2, 8.5, 10.5, 0, 0, 7); g.fill();               // body
+            g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(0, -7); g.lineTo(0, 12); g.stroke();
+            if (spots) { g.fillStyle = spots; for (const [sx, sy] of [[-4, -1], [4, -1], [-4, 6], [4, 6]]) { g.beginPath(); g.arc(sx, sy, 1.8, 0, 7); g.fill(); } }
+            return c;
+        };
+        const SPRITES = [makeBug('#121410', null), makeBug('#E71809', '#121410'), makeBug('#3F550A', '#E4EDC8')];
+        let kind, heading, lx, ly;
+
+        // torus that frames the centred content
+        const ring = { cx: 0, cy: 0 };
+        let NU = 0, NV = 0, pu, pv;
         const measureRing = () => {
             const c = canvas.getBoundingClientRect();
             const box = $('.intro-center');
             const r = box ? box.getBoundingClientRect() : { left: c.left + W * 0.25, top: c.top + H * 0.2, width: W * 0.5, height: H * 0.6 };
             ring.cx = r.left - c.left + r.width / 2;
             ring.cy = r.top - c.top + r.height / 2;
-            ring.rx = Math.min(W * 0.48, (r.width / 2) * 1.2 + 50);
-            ring.ry = Math.min(H * 0.48, (r.height / 2) * 1.2 + 30);
         };
 
         const build = () => {
@@ -530,32 +546,48 @@
             canvas.width = W * DPR; canvas.height = H * DPR;
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
             measureRing();
-            PER = W < 700 ? 200 : 340;
-            N = LANES * PER;
+            const small = W < 700;
+            NU = small ? 64 : 110; NV = small ? 14 : 18;
+            N = NU * NV;
             px = new Float32Array(N); py = new Float32Array(N);
             vx = new Float32Array(N); vy = new Float32Array(N);
-            gx = new Float32Array(N); gy = new Float32Array(N); delay = new Float32Array(N);
+            pu = new Float32Array(N); pv = new Float32Array(N); delay = new Float32Array(N);
+            kind = new Uint8Array(N); heading = new Float32Array(N); lx = new Float32Array(N); ly = new Float32Array(N);
+            gx = new Float32Array(N); gy = new Float32Array(N);
             for (let i = 0; i < N; i++) {
-                gx[i] = i % LANES;                                            // lane index
-                gy[i] = (Math.floor(i / LANES) / PER) * Math.PI * 2 + gx[i] * 0.21;  // base angle
-                px[i] = ring.cx; py[i] = ring.cy;
+                pu[i] = ((i % NU) / NU) * Math.PI * 2;
+                pv[i] = (Math.floor(i / NU) / NV) * Math.PI * 2;
+                px[i] = ring.cx; py[i] = ring.cy; gx[i] = ring.cx; gy[i] = ring.cy;
                 delay[i] = Math.random();
+                const rnd = Math.random();
+                kind[i] = rnd < 0.16 ? 1 : rnd < 0.28 ? 2 : 0;
+                heading[i] = Math.random() * 6.28;
             }
             words = { logo: logoShape() };
         };
 
-        // the resting state: a thick, slowly rotating ring of dots around the content
+        // the resting state: a big, gently tilted 3D donut of bugs around the content
         const fp = { x: 0, y: 0, s: 1 };
         const field = (i) => {
-            const lane = gx[i], t = time;
-            const u = lane / (LANES - 1) - 0.5;                 // -0.5 … 0.5 across the band
-            const dir = lane % 2 ? 1 : -1;
-            const ang = gy[i] + t * (0.05 + Math.abs(u) * 0.06) * dir;
-            const wave = Math.sin(ang * 6 + t * 0.9 + lane) * 0.035 + Math.sin(ang * 3 - t * 0.5) * 0.025;
-            const k = 1 + u * 0.32 + wave;
-            fp.x = ring.cx + Math.cos(ang) * ring.rx * k;
-            fp.y = ring.cy + Math.sin(ang) * ring.ry * k;
-            fp.s = 0.6 + (1 - Math.abs(u) * 1.6) * 0.9 + Math.sin(ang * 4 + t) * 0.25;
+            const small = W < 700;
+            const R = small ? Math.min(W * 0.62, H * 0.38) : Math.min(W * 0.4, H * 0.56);
+            const t = time, u = pu[i], v = pv[i];
+            const Rr = R * (1 + 0.04 * Math.sin(3 * u + t * 0.6));
+            const rr = R * 0.2 * (1 + 0.14 * Math.sin(2 * v + 4 * u + t * 0.9));
+            const x = (Rr + rr * Math.cos(v)) * Math.cos(u);
+            const y = (Rr + rr * Math.cos(v)) * Math.sin(u);
+            const z = rr * Math.sin(v);
+            const a = t * 0.07, ca = Math.cos(a), sa = Math.sin(a);
+            const x1 = x * ca - y * sa, y1 = x * sa + y * ca;
+            const mx = mouse.active ? (mouse.x / W - 0.5) : 0, my = mouse.active ? (mouse.y / H - 0.5) : 0;
+            const tilt = 0.28 + my * 0.3, ct = Math.cos(tilt), st = Math.sin(tilt);
+            const y2 = y1 * ct - z * st, z2 = y1 * st + z * ct;
+            const yaw = mx * 0.45, cy = Math.cos(yaw), sy = Math.sin(yaw);
+            const x3 = x1 * cy + z2 * sy, z3 = -x1 * sy + z2 * cy;
+            const cam = R * 4, f = cam / (cam - z3);
+            fp.x = ring.cx + x3 * f;
+            fp.y = ring.cy + y2 * f;
+            fp.s = Math.max(0.45, 0.55 + (z3 / (R * 0.9) + 0.5) * 0.75);   // depth → bug scale
             return fp;
         };
 
@@ -587,15 +619,16 @@
             // hide the solid logo while the dotted one is assembled, bring it back as the dots leave
             const wantDots = (st.a === 'logo' && st.b === 'logo') || (st.b === 'logo' && st.t > 0.55) || (st.a === 'logo' && st.b !== 'logo' && st.t < 0.3);
             if (stack && wantDots !== dotted) { dotted = wantDots; stack.classList.toggle('dotted', dotted); intro.classList.toggle('dotting', dotted); }
+            ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
             ctx.clearRect(0, 0, W, H);
-            ctx.fillStyle = '#121410';
-            ctx.beginPath();
             const rep = W < 700 ? 70 : 120, rep2 = rep * rep;
+            const BUG = W < 700 ? 11 : 14;          // bug size in px at scale 1
+            const LOGO_S = 0.36;                     // bugs shrink while they form the logo
             for (let i = 0; i < N; i++) {
                 const ti = ease(Math.min(1, Math.max(0, st.t * 1.6 - delay[i] * 0.6)));
                 let ax, ay, as, bx, by, bs;
-                if (!A) { const q = field(i); ax = q.x; ay = q.y; as = q.s; } else { ax = A[i * 2]; ay = A[i * 2 + 1]; as = 1.35; }
-                if (!B) { const q = field(i); bx = q.x; by = q.y; bs = q.s; } else { bx = B[i * 2]; by = B[i * 2 + 1]; bs = 1.35; }
+                if (!A) { const q = field(i); ax = q.x; ay = q.y; as = q.s; } else { ax = A[i * 2]; ay = A[i * 2 + 1]; as = LOGO_S; }
+                if (!B) { const q = field(i); bx = q.x; by = q.y; bs = q.s; } else { bx = B[i * 2]; by = B[i * 2 + 1]; bs = LOGO_S; }
                 const tx = ax + (bx - ax) * ti, ty = ay + (by - ay) * ti, size = as + (bs - as) * ti;
                 if (reduceMotion) { px[i] = tx; py[i] = ty; }
                 else {
@@ -610,10 +643,20 @@
                     vx[i] *= 0.82; vy[i] *= 0.82;
                     px[i] += vx[i]; py[i] += vy[i];
                 }
-                ctx.moveTo(px[i] + size, py[i]);
-                ctx.arc(px[i], py[i], size, 0, 6.283);
+                // face the direction of travel (smoothed), so the bugs look like they're crawling
+                const mdx = px[i] - lx[i], mdy = py[i] - ly[i];
+                if (mdx * mdx + mdy * mdy > 0.02) {
+                    const want = Math.atan2(mdy, mdx) + Math.PI / 2;
+                    let d = want - heading[i];
+                    d = Math.atan2(Math.sin(d), Math.cos(d));
+                    heading[i] += d * 0.15;
+                }
+                lx[i] = px[i]; ly[i] = py[i];
+                const s = BUG * size, ch = Math.cos(heading[i]) * s / 40, sh = Math.sin(heading[i]) * s / 40;
+                ctx.setTransform(ch * DPR, sh * DPR, -sh * DPR, ch * DPR, px[i] * DPR, py[i] * DPR);
+                ctx.drawImage(SPRITES[kind[i]], -20, -21);
             }
-            ctx.fill();
+            ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
             requestAnimationFrame(frame);
         };
 
