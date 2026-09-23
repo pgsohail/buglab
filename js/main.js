@@ -503,8 +503,8 @@
             for (let i = count - 1; i > 0; i--) { const k = (Math.random() * (i + 1)) | 0; [idx[i], idx[k]] = [idx[k], idx[i]]; }
             for (let i = 0; i < N; i++) {
                 const k = idx[i % count];
-                out[i * 2] = pts[k * 2] + (Math.random() - 0.5) * step;
-                out[i * 2 + 1] = pts[k * 2 + 1] + (Math.random() - 0.5) * step;
+                out[i * 2] = pts[k * 2] + (Math.random() - 0.5) * step * 0.5;
+                out[i * 2 + 1] = pts[k * 2 + 1] + (Math.random() - 0.5) * step * 0.5;
             }
             return out;
         };
@@ -547,7 +547,7 @@
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
             measureRing();
             const small = W < 700;
-            NU = small ? 64 : 110; NV = small ? 14 : 18;
+            NU = small ? 96 : 160; NV = small ? 20 : 30;
             N = NU * NV;
             px = new Float32Array(N); py = new Float32Array(N);
             vx = new Float32Array(N); vy = new Float32Array(N);
@@ -570,7 +570,7 @@
         const fp = { x: 0, y: 0, s: 1 };
         const field = (i) => {
             const small = W < 700;
-            const R = small ? Math.min(W * 0.62, H * 0.38) : Math.min(W * 0.4, H * 0.56);
+            const R = small ? Math.min(W * 0.5, H * 0.3) : Math.min(W * 0.29, H * 0.4);
             const t = time, u = pu[i], v = pv[i];
             const Rr = R * (1 + 0.04 * Math.sin(3 * u + t * 0.6));
             const rr = R * 0.2 * (1 + 0.14 * Math.sin(2 * v + 4 * u + t * 0.9));
@@ -587,7 +587,7 @@
             const cam = R * 4, f = cam / (cam - z3);
             fp.x = ring.cx + x3 * f;
             fp.y = ring.cy + y2 * f;
-            fp.s = Math.max(0.45, 0.55 + (z3 / (R * 0.9) + 0.5) * 0.75);   // depth → bug scale
+            fp.s = Math.max(0.55, 0.7 + (z3 / (R * 0.9) + 0.5) * 0.55);   // depth → bug scale
             return fp;
         };
 
@@ -622,8 +622,8 @@
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
             ctx.clearRect(0, 0, W, H);
             const rep = W < 700 ? 70 : 120, rep2 = rep * rep;
-            const BUG = W < 700 ? 11 : 14;          // bug size in px at scale 1
-            const LOGO_S = 0.36;                     // bugs shrink while they form the logo
+            const BUG = W < 700 ? 5.5 : 7;          // bug size in px at scale 1
+            const LOGO_S = 0.4;                     // bugs shrink while they form the logo
             for (let i = 0; i < N; i++) {
                 const ti = ease(Math.min(1, Math.max(0, st.t * 1.6 - delay[i] * 0.6)));
                 let ax, ay, as, bx, by, bs;
