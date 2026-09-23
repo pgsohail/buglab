@@ -526,7 +526,7 @@
             return c;
         };
         const SPRITES = [makeBug('#121410', null), makeBug('#E71809', '#121410'), makeBug('#3F550A', '#E4EDC8')];
-        let kind, heading, lx, ly;
+        let kind, heading, lx, ly, vis;
 
         // torus that frames the centred content
         const ring = { cx: 0, cy: 0 };
@@ -554,10 +554,15 @@
             pu = new Float32Array(N); pv = new Float32Array(N); delay = new Float32Array(N);
             kind = new Uint8Array(N); heading = new Float32Array(N); lx = new Float32Array(N); ly = new Float32Array(N);
             gx = new Float32Array(N); gy = new Float32Array(N);
+            vis = new Uint8Array(N);
             for (let i = 0; i < N; i++) {
-                pu[i] = ((i % NU) / NU) * Math.PI * 2;
-                pv[i] = (Math.floor(i / NU) / NV) * Math.PI * 2;
-                px[i] = ring.cx; py[i] = ring.cy; gx[i] = ring.cx; gy[i] = ring.cy;
+                // swarm params: orbit radius (0.2–1), start angle, angular speed (±), wander phase
+                gx[i] = 0.2 + Math.sqrt(Math.random()) * 0.8;
+                gy[i] = Math.random() * Math.PI * 2;
+                pu[i] = (0.12 + Math.random() * 0.28) * (Math.random() < 0.5 ? -1 : 1);
+                pv[i] = Math.random() * Math.PI * 2;
+                vis[i] = (i % (small ? 5 : 6)) === 0 ? 1 : 0;   // only a light swarm is visible while hovering
+                px[i] = ring.cx; py[i] = ring.cy;
                 delay[i] = Math.random();
                 const rnd = Math.random();
                 kind[i] = rnd < 0.16 ? 1 : rnd < 0.28 ? 2 : 0;
@@ -569,25 +574,14 @@
         // the resting state: a big, gently tilted 3D donut of bugs around the content
         const fp = { x: 0, y: 0, s: 1 };
         const field = (i) => {
-            const small = W < 700;
-            const R = small ? Math.min(W * 0.5, H * 0.3) : Math.min(W * 0.29, H * 0.4);
-            const t = time, u = pu[i], v = pv[i];
-            const Rr = R * (1 + 0.04 * Math.sin(3 * u + t * 0.6));
-            const rr = R * 0.2 * (1 + 0.14 * Math.sin(2 * v + 4 * u + t * 0.9));
-            const x = (Rr + rr * Math.cos(v)) * Math.cos(u);
-            const y = (Rr + rr * Math.cos(v)) * Math.sin(u);
-            const z = rr * Math.sin(v);
-            const a = t * 0.07, ca = Math.cos(a), sa = Math.sin(a);
-            const x1 = x * ca - y * sa, y1 = x * sa + y * ca;
-            const mx = mouse.active ? (mouse.x / W - 0.5) : 0, my = mouse.active ? (mouse.y / H - 0.5) : 0;
-            const tilt = 0.28 + my * 0.3, ct = Math.cos(tilt), st = Math.sin(tilt);
-            const y2 = y1 * ct - z * st, z2 = y1 * st + z * ct;
-            const yaw = mx * 0.45, cy = Math.cos(yaw), sy = Math.sin(yaw);
-            const x3 = x1 * cy + z2 * sy, z3 = -x1 * sy + z2 * cy;
-            const cam = R * 4, f = cam / (cam - z3);
-            fp.x = ring.cx + x3 * f;
-            fp.y = ring.cy + y2 * f;
-            fp.s = Math.max(0.55, 0.7 + (z3 / (R * 0.9) + 0.5) * 0.55);   // depth → bug scale
+            // a loose swarm of bugs hovering and circling over the whole hero
+            const t = time;
+            const rx = W < 700 ? W * 0.48 : Math.min(W * 0.42, 640), ry = H * 0.44;
+            const ang = gy[i] + t * pu[i];
+            const k = gx[i] + Math.sin(t * 0.7 + pv[i]) * 0.08;
+            fp.x = ring.cx + Math.cos(ang) * rx * k + Math.sin(t * 1.3 + pv[i] * 2) * 14;
+            fp.y = ring.cy + Math.sin(ang) * ry * k + Math.cos(t * 1.1 + pv[i] * 3) * 14;
+            fp.s = 1.25;
             return fp;
         };
 
@@ -654,9 +648,13 @@
                 lx[i] = px[i]; ly[i] = py[i];
                 const s = BUG * size, ch = Math.cos(heading[i]) * s / 40, sh = Math.sin(heading[i]) * s / 40;
                 ctx.setTransform(ch * DPR, sh * DPR, -sh * DPR, ch * DPR, px[i] * DPR, py[i] * DPR);
+                const alpha = vis[i] ? 1 : ((st.a === 'logo' ? 1 - ti : 0) + (st.b === 'logo' ? ti : 0));
+                if (alpha < 0.02) continue;
+                ctx.globalAlpha = Math.min(1, alpha);
                 ctx.drawImage(SPRITES[kind[i]], -20, -21);
             }
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+            ctx.globalAlpha = 1;
             requestAnimationFrame(frame);
         };
 
