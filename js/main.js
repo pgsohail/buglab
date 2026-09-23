@@ -548,7 +548,7 @@
             ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
             measureRing();
             const small = W < 700;
-            NU = small ? 96 : 160; NV = small ? 20 : 30;
+            NU = small ? 120 : 200; NV = small ? 30 : 46;
             N = NU * NV;
             px = new Float32Array(N); py = new Float32Array(N);
             vx = new Float32Array(N); vy = new Float32Array(N);
@@ -562,7 +562,7 @@
                 gy[i] = Math.random() * Math.PI * 2;
                 pu[i] = (0.12 + Math.random() * 0.28) * (Math.random() < 0.5 ? -1 : 1);
                 pv[i] = Math.random() * Math.PI * 2;
-                vis[i] = (i % (small ? 5 : 6)) === 0 ? 1 : 0;   // only a light swarm is visible while hovering
+                vis[i] = (i % (small ? 2 : 3)) === 0 ? 1 : 0;   // only a light swarm is visible while hovering
                 px[i] = ring.cx; py[i] = ring.cy;
                 delay[i] = Math.random();
                 const rnd = Math.random();
@@ -620,7 +620,7 @@
             ctx.clearRect(0, 0, W, H);
             const rep = W < 700 ? 70 : 120, rep2 = rep * rep;
             const BUG = W < 700 ? 5.5 : 7;          // bug size in px at scale 1
-            const LOGO_S = 0.36;                     // bugs shrink while they form the logo
+            const LOGO_S = 0.46;                     // bugs shrink while they form the logo
             for (let i = 0; i < N; i++) {
                 const ti = ease(Math.min(1, Math.max(0, st.t * 1.6 - delay[i] * 0.6)));
                 let ax, ay, as, bx, by, bs;
