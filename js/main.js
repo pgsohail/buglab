@@ -537,6 +537,7 @@
             const r = box ? box.getBoundingClientRect() : { left: c.left + W * 0.25, top: c.top + H * 0.2, width: W * 0.5, height: H * 0.6 };
             ring.cx = r.left - c.left + r.width / 2;
             ring.cy = r.top - c.top + r.height / 2;
+            ring.hw = r.width / 2; ring.hh = r.height / 2;
         };
 
         const build = () => {
@@ -557,7 +558,7 @@
             vis = new Uint8Array(N);
             for (let i = 0; i < N; i++) {
                 // swarm params: orbit radius (0.2–1), start angle, angular speed (±), wander phase
-                gx[i] = 0.2 + Math.sqrt(Math.random()) * 0.8;
+                gx[i] = Math.random();
                 gy[i] = Math.random() * Math.PI * 2;
                 pu[i] = (0.12 + Math.random() * 0.28) * (Math.random() < 0.5 ? -1 : 1);
                 pv[i] = Math.random() * Math.PI * 2;
@@ -574,14 +575,16 @@
         // the resting state: a big, gently tilted 3D donut of bugs around the content
         const fp = { x: 0, y: 0, s: 1 };
         const field = (i) => {
-            // a loose swarm of bugs hovering and circling over the whole hero
+            // micro bugs drifting around the content along rounded-rectangle orbits (never over the text)
             const t = time;
-            const rx = W < 700 ? W * 0.48 : Math.min(W * 0.42, 640), ry = H * 0.44;
-            const ang = gy[i] + t * pu[i];
-            const k = gx[i] + Math.sin(t * 0.7 + pv[i]) * 0.08;
-            fp.x = ring.cx + Math.cos(ang) * rx * k + Math.sin(t * 1.3 + pv[i] * 2) * 14;
-            fp.y = ring.cy + Math.sin(ang) * ry * k + Math.cos(t * 1.1 + pv[i] * 3) * 14;
-            fp.s = 1.25;
+            const small = W < 700;
+            const k = 1 + gx[i] * 0.9 + Math.sin(t * 0.6 + pv[i]) * 0.04;
+            const a = (ring.hw + (small ? 10 : 50)) * k, b = (ring.hh + (small ? 24 : 36)) * k;
+            const ang = gy[i] + t * pu[i] * 0.6;
+            const c = Math.cos(ang), s = Math.sin(ang);
+            fp.x = ring.cx + a * Math.sign(c) * Math.pow(Math.abs(c), 0.5) + Math.sin(t * 1.3 + pv[i] * 2) * 6;
+            fp.y = ring.cy + b * Math.sign(s) * Math.pow(Math.abs(s), 0.5) + Math.cos(t * 1.1 + pv[i] * 3) * 6;
+            fp.s = 0.5;
             return fp;
         };
 
@@ -617,7 +620,7 @@
             ctx.clearRect(0, 0, W, H);
             const rep = W < 700 ? 70 : 120, rep2 = rep * rep;
             const BUG = W < 700 ? 5.5 : 7;          // bug size in px at scale 1
-            const LOGO_S = 0.4;                     // bugs shrink while they form the logo
+            const LOGO_S = 0.36;                     // bugs shrink while they form the logo
             for (let i = 0; i < N; i++) {
                 const ti = ease(Math.min(1, Math.max(0, st.t * 1.6 - delay[i] * 0.6)));
                 let ax, ay, as, bx, by, bs;
@@ -648,7 +651,13 @@
                 lx[i] = px[i]; ly[i] = py[i];
                 const s = BUG * size, ch = Math.cos(heading[i]) * s / 40, sh = Math.sin(heading[i]) * s / 40;
                 ctx.setTransform(ch * DPR, sh * DPR, -sh * DPR, ch * DPR, px[i] * DPR, py[i] * DPR);
-                const alpha = vis[i] ? 1 : ((st.a === 'logo' ? 1 - ti : 0) + (st.b === 'logo' ? ti : 0));
+                let alpha = vis[i] ? 1 : ((st.a === 'logo' ? 1 - ti : 0) + (st.b === 'logo' ? ti : 0));
+                if (st.a === 'field' && st.b === 'field') {
+                    // fade out anything that drifts over the content box
+                    const ox = Math.abs(px[i] - ring.cx) - ring.hw, oy = Math.abs(py[i] - ring.cy) - ring.hh;
+                    const out = Math.max(ox, oy);
+                    alpha *= Math.min(1, Math.max(0, (out + 4) / 24));
+                }
                 if (alpha < 0.02) continue;
                 ctx.globalAlpha = Math.min(1, alpha);
                 ctx.drawImage(SPRITES[kind[i]], -20, -21);
