@@ -220,7 +220,7 @@
             const data = new FormData(form);
             const subject = `New project: ${data.get('service')} (from ${data.get('name')})`;
             const body = `Name: ${data.get('name')}\nEmail: ${data.get('email')}\nService: ${data.get('service')}\n\n${data.get('message')}`;
-            window.location.href = `mailto:support@bugslab.tech?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.location.href = `mailto:contact@bugs-lab.co.uk?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             note.textContent = 'Opening your email app… or reach us on WhatsApp.';
         });
     }
