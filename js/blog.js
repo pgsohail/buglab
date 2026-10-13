@@ -63,6 +63,23 @@
             render();
         });
         render();
+
+        // upcoming posts, titles only
+        const pipe = $('#pipeline');
+        if (pipe && UPCOMING.length) {
+            const daysTo = (iso) => Math.round((dayOf(iso) - today) / 864e5);
+            pipe.innerHTML = UPCOMING.slice(0, 8).map((p, i) => {
+                const d = daysTo(p.date);
+                const when = d <= 7 ? (d === 1 ? 'Tomorrow' : 'In ' + d + ' days') : fmt(p.date);
+                return `<li class="pipe-item${i === 0 ? ' next' : ''}" style="--tag:${TAG_COLOURS[p.tag] || '#3F550A'}">
+                    <span class="pipe-num mono">${String(i + 1).padStart(2, '0')}</span>
+                    <div class="pipe-main"><span class="post-tag">${esc(p.tag)}</span><h3>${esc(p.title)}</h3></div>
+                    <span class="pipe-when mono">${i === 0 ? '<span class="blip"></span>' : ''}${when}</span>
+                    <span class="pipe-lock" aria-label="Not published yet">🔒</span>
+                </li>`;
+            }).join('') + (UPCOMING.length > 8 ? `<li class="pipe-more mono">+ ${UPCOMING.length - 8} more posts scheduled through ${dayOf(UPCOMING[UPCOMING.length - 1].date).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</li>` : '');
+            $('#pipelineSection').hidden = false;
+        }
     }
 
     /* ── Single article ──────────────────────────────── */

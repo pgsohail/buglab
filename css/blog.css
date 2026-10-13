@@ -109,6 +109,29 @@
 .more-posts h3 { font: 700 28px/1 var(--display); letter-spacing: -.03em; margin-bottom: 20px; }
 .more-posts .post-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-bottom: 0; }
 
+/* pipeline (upcoming posts) */
+.pipeline { background: var(--ink); color: var(--bg); padding: clamp(64px, 9vw, 110px) 0; }
+.pipeline .eyebrow { color: var(--accent); }
+.pipeline-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 40px; margin-bottom: 36px; }
+.pipeline-head h2 { font: 800 clamp(40px, 6vw, 80px)/.95 var(--display); letter-spacing: -.045em; color: var(--accent); }
+.pipeline-head .lead { color: rgba(228, 237, 200, .7); max-width: 380px; }
+.pipeline-list { list-style: none; border-top: 1px solid rgba(228, 237, 200, .16); }
+.pipe-item {
+    display: grid; grid-template-columns: 48px 1fr auto 28px; align-items: center; gap: 12px 24px;
+    padding: 22px 0; border-bottom: 1px solid rgba(228, 237, 200, .16); transition: background .3s;
+}
+.pipe-item:hover { background: rgba(228, 237, 200, .04); }
+.pipe-num { color: rgba(228, 237, 200, .45); }
+.pipe-main { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.pipe-main .post-tag { font: 500 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 6px 10px; box-shadow: inset 0 0 0 1px rgba(228, 237, 200, .28); }
+.pipe-main h3 { font: 700 clamp(19px, 2vw, 26px)/1.15 var(--display); letter-spacing: -.025em; color: var(--bg); }
+.pipe-item:not(.next) .pipe-main h3 { filter: blur(.4px); opacity: .78; }
+.pipe-when { color: rgba(228, 237, 200, .6); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.pipe-item.next .pipe-when { color: var(--accent); }
+.pipe-item .blip { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: nd-blip 1.2s ease-in-out infinite; }
+.pipe-lock { font-size: 15px; opacity: .55; text-align: right; }
+.pipe-more { padding: 22px 0 0 72px; color: rgba(228, 237, 200, .55); }
+
 /* homepage teaser */
 .blog-teaser .post-grid { padding-bottom: 0; }
 
@@ -117,6 +140,9 @@
     .post-card.featured { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
+    .pipe-item { grid-template-columns: 1fr auto; }
+    .pipe-num, .pipe-lock { display: none; }
+    .pipe-more { padding-left: 0; }
     .post-grid, .more-posts .post-grid { grid-template-columns: 1fr; }
     .blog-bar nav a:not(.pill) { display: none; }
     .prose { font-size: 16.5px; }
