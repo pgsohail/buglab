@@ -36,6 +36,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/blog.css">
     <script>document.documentElement.classList.add('js');</script>
 
     <script type="application/ld+json">
@@ -75,6 +76,7 @@
     <a href="#toolkit" data-label="Toolkit"></a>
     <a href="#work" data-label="Work"></a>
     <a href="#process" data-label="Process"></a>
+    <a href="#blog" data-label="Blog"></a>
     <a href="#faq" data-label="FAQ"></a>
     <a href="#contact" data-label="Contact"></a>
 </nav>
@@ -94,6 +96,7 @@
             <div class="intro-ctas">
                 <a href="#contact" class="pill pill-dark pill-lg">Book a call <span aria-hidden="true">→</span></a>
                 <a href="#services" class="pill pill-line pill-lg">Services</a>
+                <a href="blog.html" class="pill pill-line pill-lg">Blog</a>
             </div>
             <div class="intro-meta">
                 <div><p class="mono label">New projects</p><p><a href="mailto:contact@bugs-lab.co.uk">contact@bugs-lab.co.uk</a></p></div>
@@ -324,6 +327,17 @@
     </div>
 </section>
 
+<!-- ── Blog teaser ────────────────────────────────────── -->
+<section id="blog" class="section blog-teaser" data-section>
+    <div class="wrap">
+        <div class="section-head reveal">
+            <h2 class="display">From the blog</h2>
+            <a href="blog.html" class="pill pill-line">All posts <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="post-grid" id="blogTeaser"></div>
+    </div>
+</section>
+
 <!-- ── FAQ ────────────────────────────────────────────── -->
 <section id="faq" class="section faq" data-section>
     <div class="wrap split">
@@ -385,7 +399,7 @@
 <footer class="footer">
     <div class="wrap footer-row mono">
         <span>bugslab.tech</span>
-        <span>Debug better · Build better</span>
+        <a href="blog.html">Blog</a>
         <a href="mailto:contact@bugs-lab.co.uk">contact@bugs-lab.co.uk</a>
         <span>© <span id="year">2026</span> bugslab</span>
     </div>
@@ -398,5 +412,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js" defer></script>
 <script src="js/main.js" defer></script>
+<script src="js/posts.js" defer></script>
+<script src="js/blog.js" defer></script>
 </body>
 </html>
