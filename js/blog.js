@@ -51,7 +51,7 @@
         let active = 'All';
         const render = () => {
             const list = active === 'All' ? LIVE : LIVE.filter(p => p.tag === active);
-            if (!list.length) { grid.innerHTML = '<p class="empty">No posts in this topic yet. New ones arrive every Monday.</p>'; return; }
+            if (!list.length) { grid.innerHTML = '<p class="empty">No posts in this topic yet.</p>'; return; }
             grid.innerHTML = list.map((p, i) => card(p, i === 0 && active === 'All')).join('');
         };
         const tags = ['All', ...Object.keys(TAG_COLOURS)];
@@ -64,22 +64,6 @@
         });
         render();
 
-        // upcoming posts, titles only
-        const pipe = $('#pipeline');
-        if (pipe && UPCOMING.length) {
-            const daysTo = (iso) => Math.round((dayOf(iso) - today) / 864e5);
-            pipe.innerHTML = UPCOMING.slice(0, 8).map((p, i) => {
-                const d = daysTo(p.date);
-                const when = d <= 7 ? (d === 1 ? 'Tomorrow' : 'In ' + d + ' days') : fmt(p.date);
-                return `<li class="pipe-item${i === 0 ? ' next' : ''}" style="--tag:${TAG_COLOURS[p.tag] || '#3F550A'}">
-                    <span class="pipe-num mono">${String(i + 1).padStart(2, '0')}</span>
-                    <div class="pipe-main"><span class="post-tag">${esc(p.tag)}</span><h3>${esc(p.title)}</h3></div>
-                    <span class="pipe-when mono">${i === 0 ? '<span class="blip"></span>' : ''}${when}</span>
-                    <span class="pipe-lock" aria-label="Not published yet">🔒</span>
-                </li>`;
-            }).join('') + (UPCOMING.length > 8 ? `<li class="pipe-more mono">+ ${UPCOMING.length - 8} more posts scheduled through ${dayOf(UPCOMING[UPCOMING.length - 1].date).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}</li>` : '');
-            $('#pipelineSection').hidden = false;
-        }
     }
 
     /* ── Single article ──────────────────────────────── */
@@ -88,8 +72,8 @@
         const slug = new URLSearchParams(location.search).get('p');
         const post = LIVE.find(p => p.slug === slug);
         if (!post) {
-            art.innerHTML = `<a class="back-link" href="blog.html">← All posts</a><h1>This post isn't out yet.</h1>
-                <p class="dek">It may be scheduled for a future week, or the link is wrong. ${esc(nextDropText() || '')}</p>
+            art.innerHTML = `<a class="back-link" href="blog.html">← All posts</a><h1>Post not found.</h1>
+                <p class="dek">This link may be wrong or the post has moved.</p>
                 <p style="margin-top:28px"><a class="pill pill-dark pill-lg" href="blog.html">Browse the blog <span aria-hidden="true">→</span></a></p>`;
             document.title = 'Post not found | bugslab blog';
         } else {
