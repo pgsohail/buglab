@@ -525,7 +525,7 @@
             if (spots) { g.fillStyle = spots; for (const [sx, sy] of [[-4, -1], [4, -1], [-4, 6], [4, 6]]) { g.beginPath(); g.arc(sx, sy, 1.8, 0, 7); g.fill(); } }
             return c;
         };
-        const SPRITES = [makeBug('#121410', null), makeBug('#E71809', '#121410'), makeBug('#3F550A', '#E4EDC8')];
+        const SPRITES = [makeBug('#121410', null), makeBug('#E71809', '#121410'), makeBug('#3F550A', '#FAF8F4')];
         let kind, heading, lx, ly, vis;
 
         // torus that frames the centred content
