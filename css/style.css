@@ -4,9 +4,9 @@
    ========================================================================== */
 
 :root {
-    --bg: #FAF8F4;          /* off-white canvas */
-    --bg-soft: #FFFFFF;     /* card surface */
-    --bg-alt: #F1EEE8;      /* warm grey band */
+    --bg: #F9F0E3;          /* off-white canvas */
+    --bg-soft: #FFFBF5;     /* card surface */
+    --bg-alt: #F1E4D1;      /* warm grey band */
     --ink: #121410;         /* near-black */
     --ink-2: #3C3B37;       /* body copy */
     --ink-3: #706E67;       /* muted */
